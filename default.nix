@@ -5,5 +5,5 @@ let
 in
 
 {
-  nix = makeImage ./containers/nix.nix;
+  nix = makeImage ./images/nix.nix;
 }
