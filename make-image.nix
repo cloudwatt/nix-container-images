@@ -58,7 +58,13 @@ let
        cp -r * $out/
     '';
 
-in pkgs.dockerTools.buildImageWithNixDb {
+  containerBuilder =
+    if eval.config.nix.enable
+    then pkgs.dockerTools.buildImageWithNixDb
+    else pkgs.dockerTools.buildImage;
+
+
+in containerBuilder {
   name = eval.config.image.name;
   tag = eval.config.image.tag;
   contents = [
