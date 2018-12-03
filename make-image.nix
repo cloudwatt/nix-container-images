@@ -7,9 +7,10 @@ module:
 let
   eval = evalModules {
     modules = [ module ] ++ [
-      ./fake.nix
-      ./system.nix
-      ./image.nix
+      ./modules/fake.nix
+      ./modules/system.nix
+      ./modules/image.nix
+      ./modules/nix-daemon.nix
     ] ++ (map (m: (pkgs.path + "/nixos/modules/") + m) [
       "/system/etc/etc.nix"
       "/config/users-groups.nix"
@@ -18,7 +19,6 @@ let
       "/config/system-path.nix"
       "/config/system-environment.nix"
       "/programs/environment.nix"
-      "/services/misc/nix-daemon.nix"
       "/misc/ids.nix"
       "/programs/bash/bash.nix"
       "/security/pam.nix"
