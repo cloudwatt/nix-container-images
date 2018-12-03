@@ -8,6 +8,6 @@ in
 {
   inherit makeImage;
   nix = makeImage ./images/nix.nix;
-  hello = makeImage ./images/hello.nix;
+  example = makeImage ./images/example.nix;
 }
 

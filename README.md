@@ -16,7 +16,8 @@ makeImage (
 
 # Available images
 
-- `nix`
+- `nix`: basic single user installation
+- `example`: show some supported NixOS modules
 
 They can be built with `nix-build`.
 
