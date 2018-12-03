@@ -9,6 +9,7 @@ let
     modules = [ module ] ++ [
       ./fake.nix
       ./system.nix
+      ./image.nix
     ] ++ (map (m: (pkgs.path + "/nixos/modules/") + m) [
       "/system/etc/etc.nix"
       "/config/users-groups.nix"
@@ -58,7 +59,8 @@ let
     '';
 
 in pkgs.dockerTools.buildImageWithNixDb {
-  name = "image";
+  name = eval.config.image.name;
+  tag = eval.config.image.tag;
   contents = [
     activationScriptUsers
     eval.config.system.path

@@ -3,6 +3,8 @@
 {
   imports = [ ];
   config = {
-    environment.etc.test.text = "iopiop";
+    image = {
+      name = "nix";
+    };
   };
 }
