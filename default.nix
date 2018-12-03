@@ -6,4 +6,6 @@ in
 
 {
   nix = makeImage ./images/nix.nix;
+  hello = makeImage ./images/hello.nix;
 }
+
