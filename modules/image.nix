@@ -18,6 +18,20 @@ with lib;
           The tag of the image
         '';
       };
+      run = mkOption {
+        type = types.lines;
+        default = "";
+        description = ''
+          Extra commands run at container build time
+        '';
+      };
     };
   };
+
+  config = {
+    image.run = ''
+      mkdir -m 777 tmp
+    '';
+  };
+
 }

@@ -75,6 +75,7 @@ in containerBuilder {
     activationScriptUsers
     eval.config.system.path
     eval.config.system.build.etc ];
+  extraCommands = eval.config.image.run;
 }
 # For debugging purposes
 // { config = eval.config; }
