@@ -7,9 +7,11 @@ module:
 let
   eval = evalModules {
     modules = [ module ] ++ [
+      # To not have to import all NixOS modules...
       ./modules/fake.nix
       ./modules/system.nix
       ./modules/image.nix
+      # This is to make nix optionnal
       ./modules/nix-daemon.nix
     ] ++ (map (m: (pkgs.path + "/nixos/modules/") + m) [
       "/system/etc/etc.nix"
@@ -31,13 +33,13 @@ let
     };
   };
 
-  # We have to patch activation user scripts because they are creating
-  # file in / while we only want to create files at container build time.
+  #  Activation user script is patched because it is creating
+  # files in `/` while they have to be created in the build directory.
   activationScriptUsers = let
     userSpec = pkgs.lib.last (pkgs.lib.splitString " " eval.config.system.activationScripts.users.text);
     updateUsersGroupsPatched = pkgs.runCommand
       "update-users-groups-patched"
-      { buildInputs = [pkgs.gnused]; }
+      { buildInputs = [ pkgs.gnused ]; }
       ''
         sed 's|/etc|etc|g;s|/var|var|g;s|nscd|true|g' ${(pkgs.path + /nixos/modules/config/update-users-groups.pl)} > $out
       '';
@@ -48,6 +50,7 @@ let
 
       mkdir -p etc root $out
       
+      # home dirs have to be created in the build directory
       sed 's|/home|home|g' $userSpec > ../userSpecPatched
 
       ${pkgs.perl}/bin/perl -w \

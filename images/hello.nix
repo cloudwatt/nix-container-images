@@ -7,9 +7,9 @@
       name = "hello";
       tag = "latest";
     };
-    
+
     environment.systemPackages = [ pkgs.hello ];
-    
+
     users.users.alice = {
       isNormalUser = true;
       home = "/home/alice";
