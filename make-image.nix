@@ -26,6 +26,7 @@ let
       "/security/pam.nix"
       "/security/wrappers/default.nix"
       "/programs/shadow.nix"
+      "/security/ca.nix"
     ]);
     args = {
       inherit pkgs;
