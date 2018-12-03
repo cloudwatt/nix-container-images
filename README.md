@@ -23,15 +23,16 @@ They can be built with `nix-build`.
 
 # Supported NixOS modules
 
-Currently, the goal is to reuse existing Nixos modules. They cannot
-work out-of-box so only some of them are partially supported.
+Currently, the goal is to reuse existing NixOS modules. Since they
+cannot be used out-of-box (access to `/` for instance), only some of
+them are partially supported...
 
 - `users`: create users and groups
 - `nix`: configure Nix
 - `environment.etc`: create files in `/etc`
 
 
-# Todos
+# Todos / Limitations
 
 - Should we try to use NixOS modules?
 - Reduce number of files installed by default
