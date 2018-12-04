@@ -34,7 +34,8 @@ them are partially supported...
 
 # Todos / Limitations
 
-- Should we try to use NixOS modules?
+- Systemd can not be used; it is bypassed (see [fake.nix](modules/fake.nix))
+- Should we really try to use NixOS modules?
 - Reduce number of files installed by default
 - Do not have to patch `nix-daemon.nix`
 - Do not have to patch `update-users-groups.pl`
