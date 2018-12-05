@@ -75,9 +75,17 @@ let
 
   removeUnsupportedUnits = filterAttrs (n: v: v.startAt == []);
 
-  etcS6Run = lib.mapAttrs'
-    (n: v: nameValuePair "s6/${n}/run" { source = genS6Run (systemdToS6 (v // {name = n;}));})
-    (removeUnsupportedUnits cfg.systemd.services);
+  # Generate all files required per services
+  etcS6 = let
+    genS6File = { name, generator }:
+      lib.mapAttrs'
+        (n: v: nameValuePair "s6/${n}/${name}" { source = generator (systemdToS6 (v // {name = n;}));})
+        (removeUnsupportedUnits cfg.systemd.services);
+  in
+    fold (a: b: genS6File a // b) {} [
+      {name = "run"; generator = genS6Run; }
+      {name = "finish"; generator = genS6Finish; }
+      {name = "notification-fd"; generator = genS6NotificationFd; }];
 
  in
 
@@ -87,6 +95,6 @@ let
   config = {
     # TODO: Do not add it in systemPackages
     environment.systemPackages = [ pkgs.execline ];
-    environment.etc = etcS6Run;
+    environment.etc = etcS6;
   };
 }

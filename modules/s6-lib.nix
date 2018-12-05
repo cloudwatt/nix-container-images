@@ -27,7 +27,7 @@ rec {
       # If start succeed write \n to the notification fd and close it
       # If start fails close the notification fd and return start exit code
       # FIXME: can't get the return code of ${start}
-      startOneShot = builtins.trace "oneshot" ''
+      startOneShot = ''
         ifte -X {
           fdswap 1 ${s6FdNum}
           echo -e "\n"
@@ -74,11 +74,16 @@ rec {
   genS6Finish = { type, name, ... }: pkgs.writeTextFile {
     name = "${name}-finish";
     executable = true;
-    destination = "${s6Prefix}/${name}/finish";
     text = ''
       #!${pkgs.execline}/bin/execlineb -S1
     '' + (if (type == "oneshot")
       then "exit 125"
       else "exit 0");
   };
+
+  genS6NotificationFd = { name, ... }:
+    pkgs.writeTextFile {
+      name = "${name}-notification-fd";
+      text = s6FdNum;
+    };
 }

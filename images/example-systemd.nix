@@ -7,7 +7,7 @@
       tag = "latest";
     };
 
-    systemd.services.systemd-daemon = {
+    systemd.services.daemon = {
       environment = { OUTPUT = "output"; };
       script = ''
         while true; do
@@ -16,5 +16,13 @@
         done
       '';
     };
+
+    systemd.services.oneshot = {
+      script = ''
+        echo "oneshot"
+      '';
+      serviceConfig.Type = "oneshot";
+    };
+
   };
 }
