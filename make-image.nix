@@ -13,6 +13,7 @@ let
       ./modules/image.nix
       # This is to make nix optionnal
       ./modules/nix-daemon.nix
+      ./modules/s6.nix
     ] ++ (map (m: (pkgs.path + "/nixos/modules/") + m) [
       "/system/etc/etc.nix"
       "/config/users-groups.nix"
@@ -27,6 +28,8 @@ let
       "/security/wrappers/default.nix"
       "/programs/shadow.nix"
       "/security/ca.nix"
+      "/misc/meta.nix"
+      "/misc/version.nix"
     ]);
     args = {
       inherit pkgs;
@@ -52,7 +55,7 @@ let
       mkdir -p etc root $out
       
       # home dirs have to be created in the build directory
-      sed 's|/home|home|g' $userSpec > ../userSpecPatched
+      sed 's|/home|home|g;s|/var|var|g' $userSpec > ../userSpecPatched
 
       ${pkgs.perl}/bin/perl -w \
         -I${pkgs.perlPackages.FileSlurp}/lib/perl5/site_perl \
@@ -76,6 +79,9 @@ in containerBuilder {
     eval.config.system.path
     eval.config.system.build.etc ];
   extraCommands = eval.config.image.run;
+  config = {
+    Cmd = [ "${pkgs.s6}/bin/s6-svscan" "/etc/s6" ];
+  };
 }
 # For debugging purposes
 // { config = eval.config; }
