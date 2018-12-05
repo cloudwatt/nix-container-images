@@ -74,13 +74,10 @@ with lib;
       }; 
     };
 
-    systemd = mkOption {
-        type = "undefined";
-        default = [ "nobody" ];
-        description = ''
-          A list of users which will not be shown in the display manager.
-        '';
-      };
+    networking.proxy.envVars = mkOption {
+      type = types.attrs;
+      default = {};
+    };
 
     boot.supportedFilesystems = mkOption {
       default = [ ];
