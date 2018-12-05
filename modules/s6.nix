@@ -69,7 +69,7 @@ let
 
   # Cron services are not supported
   # TODO: print a warning on unsupported services
-  supportedServices = filterAttrs (n: v: v.startAt == []) cfg.systemd.services;
+  supportedServices = filterAttrs (n: v: v.startAt == [] || hasAttr "ExecStart" v) cfg.systemd.services;
 
   # Generate all files required per services
   etcS6 = let
