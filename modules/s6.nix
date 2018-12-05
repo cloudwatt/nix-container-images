@@ -1,7 +1,7 @@
 { pkgs, config, lib, ...}:
 
 # The systemd interface!
-with import (pkgs.path + "/nixos/modules/system/boot/systemd-unit-options.nix") { inherit config lib;};
+with import (pkgs.path + "/nixos/modules/system/boot/systemd-unit-options.nix") { inherit config lib; };
 with import ./s6-lib.nix { inherit pkgs; };
 
 with lib;
@@ -9,15 +9,6 @@ with lib;
 let
 
   cfg = config;
-
-  checkService = checkUnitConfig "Service" [
-    (assertValueOneOf "Type" [
-      "simple" "oneshot"
-    ])
-    (assertValueOneOf "Restart" [
-      "no" "on-success" "on-failure" "on-abnormal" "on-abort" "always"
-    ])
-  ];
 
   serviceConfig = { name, config, ... }: {
     config = mkMerge
@@ -40,7 +31,7 @@ let
 
   systemd.services = mkOption {
       default = {};
-      type = with types; attrsOf (submodule [ { options = serviceOptions; } serviceConfig  ]);
+      type = with types; attrsOf (submodule [ { options = serviceOptions; } serviceConfig ]);
       description = "Definition of systemd service units.";
   };
 
@@ -52,8 +43,11 @@ let
       type = "undefined";
   };
 
+  # Transform some systemd arguments to be used by s6
   systemdToS6 = service:
     let
+      # execStart can start with special characters that needs to be
+      # interpreted.
       execStartToS6 = e:
         let l = splitString " " e;
         in if pkgs.lib.hasPrefix "@" (head l)
@@ -73,14 +67,16 @@ let
       chdir = attrByPath ["serviceConfig" "WorkingDirectory"] "" service;
     };
 
-  removeUnsupportedUnits = filterAttrs (n: v: v.startAt == []);
+  # Cron services are not supported
+  # TODO: print a warning on unsupported services
+  supportedServices = filterAttrs (n: v: v.startAt == []) cfg.systemd.services;
 
   # Generate all files required per services
   etcS6 = let
     genS6File = { name, generator }:
       lib.mapAttrs'
         (n: v: nameValuePair "s6/${n}/${name}" { source = generator (systemdToS6 (v // {name = n;}));})
-        (removeUnsupportedUnits cfg.systemd.services);
+        supportedServices;
   in
     fold (a: b: genS6File a // b) {} [
       {name = "run"; generator = genS6Run; }
