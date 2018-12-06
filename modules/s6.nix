@@ -48,6 +48,7 @@ let
     let
       # execStart can start with special characters that needs to be
       # interpreted.
+      # @/bin/service service arg1 -> exec -a service /bin/service arg1
       execStartToS6 = e:
         let l = splitString " " e;
         in if pkgs.lib.hasPrefix "@" (head l)

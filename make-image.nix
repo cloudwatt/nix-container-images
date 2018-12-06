@@ -80,6 +80,7 @@ in containerBuilder {
     eval.config.system.build.etc ];
   extraCommands = eval.config.image.run;
   config = {
+    # TODO: move to s6 module
     Cmd = [ "${pkgs.s6}/bin/s6-svscan" "/etc/s6" ];
   };
 }
