@@ -6,7 +6,7 @@ rec {
   s6FdNum = "42";
   s6Prefix = "/etc/s6";
 
-  attrToEnv = env: concatStringsSep "\n" (mapAttrsToList (n: v: "export ${n}=${v}") env);
+  attrToEnv = env: concatStringsSep "\n" (mapAttrsToList (n: v: ''export ${n}="${v}"'') env);
 
   genS6Run = { type ? "simple", environment ? {}, name, execStart ? "", chdir ? "", user ? "root", execStartPre ? "", notifyCheck ? "", after ? [], ... }:
     let
