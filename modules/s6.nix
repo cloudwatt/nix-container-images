@@ -70,7 +70,15 @@ let
 
   # Cron services are not supported
   # TODO: print a warning on unsupported services
-  supportedServices = filterAttrs (n: v: v.startAt == [] || hasAttr "ExecStart" v) cfg.systemd.services;
+  supportedServices = let
+    predicates = n: v: all (f: f n v) [
+      # Units containing calendar event are not supported
+      (n: v: v.startAt == [])
+      # Units have either ExecStart or a script
+      (n: v: hasAttrByPath ["serviceConfig" "ExecStart"] v || (v.script != ""))
+    ];
+  in
+    filterAttrs predicates cfg.systemd.services;
 
   # Generate all files required per services
   etcS6 = let
