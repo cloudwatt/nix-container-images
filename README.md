@@ -3,7 +3,7 @@
 Write container images as NixOS machines!
 
 ```nix
-makeImage (
+lib.makeImage (
   { pkgs, ... }: {
     config = {
       image.name = "hello";
@@ -16,6 +16,10 @@ makeImage (
   })
 ```
 
+To use `lib.makeImage` in a project, just add `overlay.nix` to the
+nixpkgs overlay list. More information in the [nixpkgs
+documentation](https://nixos.org/nixpkgs/manual/#sec-overlays-install).
+
 
 ## Available images
 
@@ -23,12 +27,12 @@ makeImage (
 - [example](images/example.nix): show some supported NixOS modules
 - [example-systemd](images/example-systemd.nix): supported subset of systemd modules
 
-They can be built with `nix-build`.
+They can be built with `nix-build -A dockerImages`.
 
 
 ## Supported NixOS modules
 
-The goal is to reuse some NixOS modules. Since they cannot be used
+The goal is also to reuse NixOS modules. Since they cannot be used
 out-of-box (access to `/` for instance), only some of them are
 partially supported.
 
@@ -36,12 +40,22 @@ partially supported.
 - `nix`: configure Nix
 - `environment.etc`: create files in `/etc`
 - `systemd`: a small subset of the systemd module is implemented with [s6](https://www.skarnet.org/software/s6/)
+- `nginx`: see its [test](./tests/nginx.nix).
+
+
+## Tests
+
+Some images are tested in a NixOS vm. See the [tests directory](./tests).
+To run tests:
+```
+nix-build -A tests.dockerImages
+```
 
 
 ## Todos / Limitations
 
-- Reduce number of files installed by default
+- Systemd implementation is fragile and approximative
+- Reduce number of files installed by default in images
 - Do not have to patch `nix-daemon.nix`
 - Do not have to patch `update-users-groups.pl`
 - Warnings on non implemented systemd features
-- Add tests
