@@ -9,7 +9,10 @@ let
     example-systemd = makeImage ./images/example-systemd.nix;
   };
 
-  tests.dockerImages.nix = super.callPackage ./tests/nix.nix { };
+  tests.dockerImages = {
+    nix = super.callPackage ./tests/nix.nix { };
+    nginx = super.callPackage ./tests/nginx.nix { };
+  };
 in
 {
   inherit dockerImages tests;

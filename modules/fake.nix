@@ -85,5 +85,14 @@ with lib;
       type = types.listOf types.str;
       description = "Names of supported filesystem types in the initial ramdisk.";
     };
+
+    # Required by nginx
+    security.acme = mkOption {
+      default = {};
+    };
+    # Required by nginx
+    networking.enableIPv6 = mkOption {
+      default = false;
+    };
   };
 }
