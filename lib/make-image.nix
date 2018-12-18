@@ -8,12 +8,12 @@ let
   eval = evalModules {
     modules = [ module ] ++ [
       # To not have to import all NixOS modules...
-      ./modules/fake.nix
-      ./modules/system.nix
-      ./modules/image.nix
+      ../modules/fake.nix
+      ../modules/system.nix
+      ../modules/image.nix
       # This is to make nix optionnal
-      ./modules/nix-daemon.nix
-      ./modules/s6.nix
+      ../modules/nix-daemon.nix
+      ../modules/s6.nix
     ] ++ (map (m: (pkgs.path + "/nixos/modules/") + m) [
       "/system/etc/etc.nix"
       "/config/users-groups.nix"
@@ -30,6 +30,10 @@ let
       "/security/ca.nix"
       "/misc/meta.nix"
       "/misc/version.nix"
+      "/services/continuous-integration/hydra/default.nix"
+      "/services/databases/postgresql.nix"
+      "/services/databases/postgresql.nix"
+      "/services/web-servers/nginx/default.nix"
     ]);
     args = {
       inherit pkgs;
