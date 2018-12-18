@@ -4,12 +4,17 @@
 
 let
   makeImage = pkgs.callPackage ./make-image.nix {};
+
+  dockerImages = {
+    nix = makeImage ./images/nix.nix;
+    example = makeImage ./images/example.nix;
+    example-systemd = makeImage ./images/example-systemd.nix;
+  };
+
+  tests.nix = pkgs.callPackage ./tests/nix.nix { inherit dockerImages; };
+
 in
 {
-  inherit makeImage;
-  nix = makeImage ./images/nix.nix;
-  example = makeImage ./images/example.nix;
-  example-systemd = makeImage ./images/example-systemd.nix;
-
+  inherit makeImage dockerImages tests;
 }
 
