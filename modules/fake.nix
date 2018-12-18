@@ -1,3 +1,6 @@
+# We add fake options because we don't want to import all NixOS
+# modules.
+
 { config, pkgs, lib, ...}:
 
 with lib;

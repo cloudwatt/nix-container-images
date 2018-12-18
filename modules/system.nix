@@ -4,7 +4,6 @@ with lib;
 
 {
   options = {
-
     system.build = mkOption {
       internal = true;
       default = {};
@@ -16,11 +15,6 @@ with lib;
   };
   
   config = {
-
-    # TODO: Really useless?
-    # system.build.earlyMountScript = "";
-    # users.ldap = {};
-
     # This is to remove sytemd dependencies
     # { startSession = true; allowNullPassword = true; showMotd = true; updateWtmp = true; }
     security.pam.services.login = mkOverride 1 { startSession = false; };
