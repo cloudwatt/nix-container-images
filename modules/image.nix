@@ -25,6 +25,13 @@ with lib;
           Extra commands run at container build time
         '';
       };
+      env = mkOption {
+        type = types.attrs;
+        default = {};
+        description = ''
+          Environment variables
+        '';
+      };
     };
   };
 

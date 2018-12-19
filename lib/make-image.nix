@@ -86,6 +86,7 @@ in containerBuilder {
   config = {
     # TODO: move to s6 module
     Cmd = [ "${pkgs.s6}/bin/s6-svscan" "/etc/s6" ];
+    Env = mapAttrsToList (n: v: "${n}=${v}") eval.config.image.env;
   };
 }
 # For debugging purposes
