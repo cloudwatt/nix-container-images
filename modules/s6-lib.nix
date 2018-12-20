@@ -4,6 +4,8 @@ with pkgs.lib;
 
 rec {
   s6FdNum = "42";
+
+  # FIXME: do not use an absolute path: we can not run these outside of the container:/
   s6Prefix = "/etc/s6";
 
   attrToEnv = env: concatStringsSep "\n" (mapAttrsToList (n: v: ''export ${n}="${v}"'') env);
@@ -42,15 +44,17 @@ rec {
         ${start}
       '';
       # When we need to wait on some service check if the service supports
-      # notifications. If it does wait on 'U' event. Otherwise wait in 'u'
+      # notifications. If it does wait on 'U' event (). Otherwise wait in 'u'
       # event.
+      # FIXME: suppose B requires A, if B restarts, it will wait A forever
+      # since A will not send a new notification.
       waitFor = name: ''
         if {
-          ifelse { s6-test -f ${s6Prefix}/${name}/notification-fd }
+          ifelse { ${pkgs.s6PortableUtils}/bin/s6-test -f ${s6Prefix}/${name}/notification-fd }
           {
-            s6-svwait -U -t 0 ${s6Prefix}/${name}
+            ${pkgs.s6}/bin/s6-svwait -U -t 0 ${s6Prefix}/${name}
           }
-          s6-svwait -u -t 0 ${s6Prefix}/${name}
+          ${pkgs.s6}/bin/s6-svwait -u -t 0 ${s6Prefix}/${name}
         }
       '';
     in
@@ -61,8 +65,8 @@ rec {
           #!${pkgs.execline}/bin/execlineb -P
           fdmove -c 2 1
           ${concatStrings (map waitFor after)}
-          ${optionalString (notifyCheck != "" && type == "notify") "s6-notifyoncheck -n0"}
-          ${optionalString (user != "root") "s6-setuidgid ${user}"}
+          ${optionalString (notifyCheck != "" && type == "notify") "${pkgs.s6}/bin/s6-notifyoncheck -n0"}
+          ${optionalString (user != "root") "${pkgs.s6}/bin/s6-setuidgid ${user}"}
           ${optionalString (chdir != "") "cd ${chdir}"}
           ${if type == "oneshot" then startOneShot else start}
         '';

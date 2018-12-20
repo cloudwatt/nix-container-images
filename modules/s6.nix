@@ -58,6 +58,17 @@ let
             (pkgs.lib.removePrefix "@" (head l))
             ] ++ (drop 2 l))
           else e;
+      # Converting systemd dependency definitions to s6. Only
+      # dependency ending with .service are supported.
+      depsToS6 = attr:
+        let
+          p = partition (hasSuffix ".service") service."${attr}";
+          ignored = concatStringsSep " " p.wrong;
+          warnings = e:
+            if ignored != ""
+            then builtins.trace "warning: ignoring service ${service.name} ${attr} dependencies: ${ignored}" e
+            else e;
+        in warnings (map (removeSuffix ".service") p.right);
     in
     {
       name = service.name;
@@ -66,6 +77,8 @@ let
       execStartPre = attrByPath ["serviceConfig" "ExecStartPre"] "" service;
       type = attrByPath ["serviceConfig" "Type"] "" service;
       chdir = attrByPath ["serviceConfig" "WorkingDirectory"] "" service;
+      # FIXME: this is not the expected after/requires systemd behavior
+      after = unique (concatMap depsToS6 [ "requires"  "after" ]);
     };
 
   # Cron services are not supported
