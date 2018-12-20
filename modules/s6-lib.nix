@@ -5,9 +5,6 @@ with pkgs.lib;
 rec {
   s6FdNum = "42";
 
-  # FIXME: do not use an absolute path: we can not run these outside of the container:/
-  s6Prefix = "/etc/s6";
-
   attrToEnv = env: concatStringsSep "\n" (mapAttrsToList (n: v: ''export ${n}="${v}"'') env);
 
   genS6Run = { type ? "simple", environment ? {}, name, execStart ? "", chdir ? "", user ? "root", execStartPre ? "", notifyCheck ? "", after ? [], ... }:
@@ -50,11 +47,11 @@ rec {
       # since A will not send a new notification.
       waitFor = name: ''
         if {
-          ifelse { ${pkgs.s6PortableUtils}/bin/s6-test -f ${s6Prefix}/${name}/notification-fd }
+          ifelse { ${pkgs.s6PortableUtils}/bin/s6-test -f ../${name}/notification-fd }
           {
-            ${pkgs.s6}/bin/s6-svwait -U -t 0 ${s6Prefix}/${name}
+            ${pkgs.s6}/bin/s6-svwait -U -t 0 ../${name}
           }
-          ${pkgs.s6}/bin/s6-svwait -u -t 0 ${s6Prefix}/${name}
+          ${pkgs.s6}/bin/s6-svwait -u -t 0 ../${name}
         }
       '';
     in
