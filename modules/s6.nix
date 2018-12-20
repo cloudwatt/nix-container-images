@@ -66,7 +66,7 @@ let
           ignored = concatStringsSep " " p.wrong;
           warnings = e:
             if ignored != ""
-            then builtins.trace "warning: ignoring service ${service.name} ${attr} dependencies: ${ignored}" e
+            then builtins.trace "warning: ignoring the following ${attr} elements of the service ${service.name}: ${ignored}" e
             else e;
         in warnings (map (removeSuffix ".service") p.right);
     in
