@@ -57,7 +57,7 @@ let
       cd system
 
       mkdir -p etc root $out
-      
+
       # home dirs have to be created in the build directory
       sed 's|/home|home|g;s|/var|var|g' $userSpec > ../userSpecPatched
 
@@ -75,6 +75,38 @@ let
     else pkgs.dockerTools.buildImage;
 
 
+  # This generates a script that run s6 locally
+  # This is only used for debugging and test purpose
+  standalone = pkgs.writeScript "s6-standalone" ''
+    if [ $# -ne 1 ]
+    then
+     echo "Usage s6-standalone S6-SCANDIR"
+     exit 1
+    fi
+
+    SCANDIR=$1
+
+    if [ -e $SCANDIR ]
+    then
+      echo "S6-SCANDIR directory must not exist! Exiting."
+      exit 2
+    fi
+
+    # Because S6 writes to the scan dir
+    cp -Lr ${eval.config.system.build.etc}/etc/s6 $SCANDIR
+    chmod u+w -R $SCANDIR
+
+    # This is because s6 is run in an interactive shell
+    # See the note section in https://skarnet.org/software/s6/s6-svscan.html
+    for i in `ls $SCANDIR`; do touch $SCANDIR/$i/nosetsid; done
+
+    # Do not use the generated finish since it kills all processes it can!
+    echo "#!${pkgs.s6PortableUtils}/bin/s6-echo Terminated" > $SCANDIR/.s6-svscan/finish
+
+    ${pkgs.s6}/bin/s6-svscan $SCANDIR
+  '';
+
+
 in containerBuilder {
   name = eval.config.image.name;
   tag = eval.config.image.tag;
@@ -89,5 +121,9 @@ in containerBuilder {
     Env = mapAttrsToList (n: v: "${n}=${v}") eval.config.image.env;
   };
 }
+//
 # For debugging purposes
-// { config = eval.config; }
+{
+  config = eval.config;
+  s6Standalone = standalone;
+}
