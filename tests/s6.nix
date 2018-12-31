@@ -82,7 +82,7 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
           echo "restart"
           exit 1
         '';
-        serviceConfig.type = "oneshot";
+        serviceConfig.Type = "oneshot";
       };
     };
     testScript = ''

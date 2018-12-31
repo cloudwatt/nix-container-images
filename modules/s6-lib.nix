@@ -38,7 +38,8 @@ in rec {
 
       if { s6-echo [init stage 1] Starting }
 
-      if { s6-mkdir -p $1 }
+      if { s6-mkdir -p ''${1}/.s6-svscan }
+      if { s6-ln -s ${genFinish} ''${1}/.s6-svscan/finish }
 
       # Init stage 2
       background {
@@ -66,12 +67,16 @@ in rec {
     '';
   };
 
-  genOneshots = concatMapStringsSep "\n" (s: "foreground { ${genS6Run s} }");
+  genOneshots = concatMapStringsSep "\n  " (s: ''
+    ifelse -X -n { ${genS6Run s} } { s6-svscanctl -t $1 }
+  '');
+
+  genFinish = pkgs.writeScript "s6-finish" ''
+    #!${pkgs.s6PortableUtils}/bin/s6-echo [init finish]
+  '';
 
   genS6ScanDir = services: pkgs.runCommand "s6-scandir" {} (''
-    mkdir -p $out/.s6-svscan
-    echo '#!${pkgs.s6PortableUtils}/bin/s6-echo [init finish]' > $out/.s6-svscan/finish
-    chmod a+x $out/.s6-svscan/finish
+    mkdir -p $out
   '' + (concatMapStringsSep "\n" (genS6ServiceDir) services));
 
   genS6ServiceDir = service: ''
