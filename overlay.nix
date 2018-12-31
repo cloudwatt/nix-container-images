@@ -9,11 +9,13 @@ let
     example-systemd = makeImage ./images/example-systemd.nix;
   };
 
-  tests.dockerImages = {
-    nix = super.callPackage ./tests/nix.nix { };
-    nginx = super.callPackage ./tests/nginx.nix { };
-    env = super.callPackage ./tests/env.nix { };
-    systemd = super.callPackage ./tests/systemd.nix { };
+  tests = {
+    dockerImages = {
+      nix = super.callPackage ./tests/nix.nix { };
+      nginx = super.callPackage ./tests/nginx.nix { };
+      env = super.callPackage ./tests/env.nix { };
+      systemd = super.callPackage ./tests/systemd.nix { };
+    };
   };
 in
 {

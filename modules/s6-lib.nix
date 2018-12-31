@@ -1,13 +1,94 @@
+# FIXME: This file should be moved to lib/ but I fail to make it
+# available for the NixOS module system...
+
 { pkgs }:
 
 with pkgs.lib;
 
-rec {
-  s6FdNum = "42";
-
+let
   attrToEnv = env: concatStringsSep "\n" (mapAttrsToList (n: v: ''export ${n}="${v}"'') env);
+  path = "${pkgs.execline}/bin:${pkgs.s6PortableUtils}/bin:${pkgs.s6}/bin:${pkgs.coreutils}/bin";
 
-  genS6Run = { type ? "simple", environment ? {}, name, execStart ? "", chdir ? "", user ? "root", execStartPre ? "", notifyCheck ? "", after ? [], ... }:
+in rec {
+
+  s6InitWithStateDir = oneshots: longRuns: pkgs.writeTextFile {
+    name = "init";
+    executable = true;
+    text = ''
+      #!${pkgs.execline}/bin/execlineb -S0
+      ${s6Init oneshots longRuns} "/run/s6"
+    '';
+  };
+
+  s6Init = oneshots: longRuns: pkgs.writeTextFile {
+    name = "init";
+    executable = true;
+    text = ''
+      #!${pkgs.execline}/bin/execlineb -S0
+
+      ${pkgs.execline}/bin/export PATH ${path}
+
+      ${pkgs.execline}/bin/if { 
+
+      ifelse { s6-test $# -ne 1 }
+      { if { s6-echo "Usage: $0 STATE-DIR" } exit 1 }
+
+      ifelse { s6-test -e $1 }
+      { if { s6-echo The state directory $1 must not exist! Exiting. } exit 1 }
+
+      if { s6-echo [init stage 1] Starting }
+
+      if { s6-mkdir -p $1 }
+
+      # Init stage 2
+      background {
+        if { s6-echo [init stage 2] Running oneshot services }
+
+        ${genOneshots oneshots}
+
+        if { s6-echo [init stage 2] Activate longrun services }
+
+        # Move the service file to the scan directoy
+        if { cp -r ${genS6ScanDir longRuns}/. $1 }
+        # To be able to delete the state dir
+        if { chmod -R 0755 $1 }
+        
+        if { s6-svscanctl -a $1 }
+      }
+
+      ## run the rest of stage 1 with sanitized descriptors
+      redirfd -r 0 /dev/null
+      true
+      }
+
+      # Run the pid 1
+      s6-svscan -t0 $1
+    '';
+  };
+
+  genOneshots = concatMapStringsSep "\n" (s: "foreground { ${genS6Run s} }");
+
+  genS6ScanDir = services: pkgs.runCommand "s6-scandir" {} (''
+    mkdir -p $out/.s6-svscan
+    echo '#!${pkgs.s6PortableUtils}/bin/s6-true' > $out/.s6-svscan/finish
+    chmod a+x $out/.s6-svscan/finish
+  '' + (concatMapStringsSep "\n" (genS6ServiceDir) services));
+
+  genS6ServiceDir = service: ''
+    mkdir $out/${service.name}
+    ln -s ${genS6Run service} $out/${service.name}/run
+  '';
+
+  genS6Run = {
+    name,
+    type,
+    restart,
+    environment ? {},
+    execStart ? "",
+    chdir ? "",
+    user ? "root",
+    execStartPre ? ""
+  }:
     let
       # If execStartPre is defined we create a bash script
       # to run it before the execStart. This allows to export
@@ -23,37 +104,6 @@ rec {
           ''}/bin/start-${name}"
         else
           execStart;
-      # If start succeed write \n to the notification fd and close it
-      # If start fails close the notification fd and return start exit code
-      # FIXME: can't get the return code of ${start}
-      startOneShot = ''
-        ifte -X {
-          fdswap 1 ${s6FdNum}
-          echo -e "\n"
-          fdswap ${s6FdNum} 1
-          fdclose ${s6FdNum}
-          exit 0
-        }
-        {
-          fdclose ${s6FdNum}
-          exit 100
-        }
-        ${start}
-      '';
-      # When we need to wait on some service check if the service supports
-      # notifications. If it does wait on 'U' event (). Otherwise wait in 'u'
-      # event.
-      # FIXME: suppose B requires A, if B restarts, it will wait A forever
-      # since A will not send a new notification.
-      waitFor = name: ''
-        if {
-          ifelse { ${pkgs.s6PortableUtils}/bin/s6-test -f ../${name}/notification-fd }
-          {
-            ${pkgs.s6}/bin/s6-svwait -U -t 0 ../${name}
-          }
-          ${pkgs.s6}/bin/s6-svwait -u -t 0 ../${name}
-        }
-      '';
     in
       pkgs.writeTextFile {
         name = "${name}-run";
@@ -61,30 +111,9 @@ rec {
         text = ''
           #!${pkgs.execline}/bin/execlineb -P
           fdmove -c 2 1
-          ${concatStrings (map waitFor after)}
-          ${optionalString (notifyCheck != "" && type == "notify") "${pkgs.s6}/bin/s6-notifyoncheck -n0"}
           ${optionalString (user != "root") "${pkgs.s6}/bin/s6-setuidgid ${user}"}
           ${optionalString (chdir != "") "cd ${chdir}"}
-          ${if type == "oneshot" then startOneShot else start}
+          ${start}
         '';
       };
-
-  # When type is oneshot, exit with 125 will make s6 to not restart the service
-  # When stopOnFailure is true and exit code if different than 0 and 256 we stop s6-svscan
-  # 256 code is received if the process was stopped by s6 (not a crash)
-  genS6Finish = { type, name, ... }: pkgs.writeTextFile {
-    name = "${name}-finish";
-    executable = true;
-    text = ''
-      #!${pkgs.execline}/bin/execlineb -S1
-    '' + (if (type == "oneshot")
-      then "exit 125"
-      else "exit 0");
-  };
-
-  genS6NotificationFd = { name, ... }:
-    pkgs.writeTextFile {
-      name = "${name}-notification-fd";
-      text = s6FdNum;
-    };
 }

@@ -52,6 +52,18 @@ nix-build -A tests.dockerImages
 ```
 
 
+## Implementation of the NixOS systemd service interface
+
+To be able to run some systemd services in containers,
+[s6](https://www.skarnet.org/software/s6/) is used as init
+system. Systemd service definitions are used to generate s6 services
+with several differences in the implementation:
+
+- all oneshot services are executed at container start up before long run services
+- service dependancies are ignored
+- systemd cron job are not supported
+
+
 ## Todos / Limitations
 
 - Systemd implementation is fragile and approximative
@@ -59,3 +71,16 @@ nix-build -A tests.dockerImages
 - Do not have to patch `nix-daemon.nix`
 - Do not have to patch `update-users-groups.pl`
 - Warnings on non implemented systemd features
+
+
+## Tips
+
+- To generate and run the container init script
+  ```
+  nix-build  -A dockerImages.example-systemd.init
+  ./result S6-STATE-DIR
+  ```
+
+- To get the image used by a test `nix-build -A tests.dockerImages.nginx.image`
+
+

@@ -34,16 +34,14 @@ let
       type = with types; attrsOf (submodule [ { options = serviceOptions; } serviceConfig ]);
       description = "Definition of systemd service units.";
   };
-
   systemd.packages = mkOption {
       type = "undefined";
   };
-
   systemd.sockets = mkOption {
       type = "undefined";
   };
 
-  # Transform some systemd arguments to be used by s6
+  # Generate s6 arguments from systemd service definition
   systemdToS6 = service:
     let
       # execStart can start with special characters that needs to be
@@ -58,61 +56,50 @@ let
             (pkgs.lib.removePrefix "@" (head l))
             ] ++ (drop 2 l))
           else e;
-      # Converting systemd dependency definitions to s6. Only
-      # dependency ending with .service are supported.
-      depsToS6 = attr:
-        let
-          p = partition (hasSuffix ".service") service."${attr}";
-          ignored = concatStringsSep " " p.wrong;
-          warnings = e:
-            if ignored != ""
-            then builtins.trace "warning: ignoring the following ${attr} elements of the service ${service.name}: ${ignored}" e
-            else e;
-        in warnings (map (removeSuffix ".service") p.right);
     in
     {
       name = service.name;
+      type = attrByPath ["serviceConfig" "Type"] "simple" service;
       environment = service.environment;
       execStart = execStartToS6 service.serviceConfig.ExecStart;
       execStartPre = attrByPath ["serviceConfig" "ExecStartPre"] "" service;
-      type = attrByPath ["serviceConfig" "Type"] "" service;
       chdir = attrByPath ["serviceConfig" "WorkingDirectory"] "" service;
-      # FIXME: this is not the expected after/requires systemd behavior
-      after = unique (concatMap depsToS6 [ "requires"  "after" ]);
+      restart = attrByPath ["serviceConfig" "Restart"] "no" service;
     };
 
-  # Cron services are not supported
   # TODO: print a warning on unsupported services
   supportedServices = let
     predicates = n: v: all (f: f n v) [
-      # Units containing calendar event are not supported
+      # Units containing calendar event are not supported (cron jobs)
       (n: v: v.startAt == [])
       # Units have either ExecStart or a script
       (n: v: hasAttrByPath ["serviceConfig" "ExecStart"] v || (v.script != ""))
+      # Only Restart values no and always are supported
+      (n: v: (! hasAttrByPath ["serviceConfig" "Restart"] v) || (v.serviceConfig.Restart == "no") || (v.serviceConfig.Restart == "always"))
     ];
   in
-    filterAttrs predicates cfg.systemd.services;
+   filterAttrs predicates cfg.systemd.services;
 
-  # Generate all files required per services
-  etcS6 = let
-    genS6File = { name, generator }:
-      lib.mapAttrs'
-        (n: v: nameValuePair "s6/${n}/${name}" { source = generator (systemdToS6 (v // {name = n;}));})
-        supportedServices;
-  in
-    fold (a: b: genS6File a // b) {} [
-      {name = "run"; generator = genS6Run; }
-      {name = "finish"; generator = genS6Finish; }
-      {name = "notification-fd"; generator = genS6NotificationFd; }];
+  # Partition oneshot and longrun services
+  s6ServicesPartitions = partition (s: s.type == "oneshot") (mapAttrsToList (n: v: systemdToS6 ({name = n;} // v)) supportedServices);
+
+  longRuns =  s6ServicesPartitions.wrong;
+  oneshots = s6ServicesPartitions.right; 
 
  in
 
 {
-  options = { inherit systemd; };
+  options = {
+    inherit systemd;
+    s6.init = mkOption {
+      type = types.nullOr types.package;
+      default = null;
+    };
+  };
 
-  config = {
-    # TODO: Do not add it in systemPackages
-    environment.systemPackages = [ pkgs.execline ];
-    environment.etc = etcS6;
+  # The s6 image entry point is only set if some services are defined
+  config = mkIf ((oneshots != []) || (longRuns != [])) {
+    s6.init = s6Init oneshots longRuns;
+    image.entryPoint = [ "${s6InitWithStateDir oneshots longRuns}" ];
   };
 }

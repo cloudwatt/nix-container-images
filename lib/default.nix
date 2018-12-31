@@ -10,7 +10,8 @@ rec {
 
   makeImage = pkgs.callPackage ./make-image.nix {};
 
-  # Build a test vm with Docker enable 
+  # Build a test vm with Docker enable
+  # It also exposes the `image` attribute.
   makeContainerTest = { image, testScript }:
     let
       machine = { config, ... }: {
@@ -25,6 +26,7 @@ rec {
     makeTest {
       name = image.imageName;
       nodes = { inherit machine; };
-    inherit testScript;
-    };
+      inherit testScript;
+    } //
+    { inherit image; };
 }

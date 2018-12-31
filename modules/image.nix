@@ -32,6 +32,13 @@ with lib;
           Environment variables
         '';
       };
+      entryPoint = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = ''
+          Entry point command list
+        '';
+      };
     };
   };
 
