@@ -10,6 +10,7 @@ let
   };
 
   tests = {
+    s6 = super.callPackage ./tests/s6.nix { };
     dockerImages = {
       nix = super.callPackage ./tests/nix.nix { };
       nginx = super.callPackage ./tests/nginx.nix { };
