@@ -11,7 +11,7 @@ let
 
 in rec {
 
-  s6InitWithStateDir = oneshots: longRuns: pkgs.writeTextFile {
+  s6InitWithStateDir = oneshotsPre: oneshotsPost: pkgs.writeTextFile {
     name = "init";
     executable = true;
     text = ''
@@ -20,7 +20,7 @@ in rec {
     '';
   };
 
-  s6Init = oneshots: longRuns: pkgs.writeTextFile {
+  s6Init = oneshotsPre: oneshotsPost: longRuns: pkgs.writeTextFile {
     name = "init";
     executable = true;
     text = ''
@@ -45,7 +45,7 @@ in rec {
       background {
         if { s6-echo [init stage 2] Running oneshot services }
 
-        ${genOneshots oneshots}
+        ${genOneshots oneshotsPre}
 
         if { s6-echo [init stage 2] Activate longrun services }
 
@@ -55,6 +55,8 @@ in rec {
         if { chmod -R 0755 $1 }
         
         if { s6-svscanctl -a $1 }
+
+        ${genOneshots oneshotsPost}
       }
 
       ## run the rest of stage 1 with sanitized descriptors

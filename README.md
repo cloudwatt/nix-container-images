@@ -59,10 +59,13 @@ To be able to run some systemd services in containers,
 system. Systemd service definitions are used to generate s6 services
 with several differences in the implementation:
 
-- all oneshot services are executed at container start up before long run services
-- service dependancies are ignored
+- all oneshot services are executed at container start up
+- long run service dependencies are ignored
 - systemd cron job are not supported
 
+### Oneshot service dependencies
+
+TODO: explain pre/post oneshot services and the after option implementation
 
 ## Todos / Limitations
 

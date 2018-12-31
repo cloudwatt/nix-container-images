@@ -114,4 +114,28 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     '';
   };
 
+  # OneshotPost service can have dependencies
+  # example-1 is executed after example-2
+  oneshotPost = {
+    config = {
+      image.name = "oneshotPost";
+
+      systemd.services.example-1 = {
+        script = "sleep 2; echo example-1";
+        after = [ "example-2.service" ];
+        serviceConfig.Type = "oneshot";
+      };
+      systemd.services.example-2 = {
+        script = "echo example-2;";
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell}
+      set -e
+      grep -q example-1 $1
+      grep -q example-2 $1
+      grep "example" $1 | head -n2 | sort --check --reverse
+    '';
+  };
+
 }
