@@ -91,4 +91,27 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     '';
   };
 
+  # Oneshot service can have dependencies
+  dependentOneshot = {
+    config = {
+      image.name = "dependentOneshot";
+      systemd.services.example-1 = {
+        script = "echo example-1";
+        after = [ "example-2.service" ];
+        serviceConfig.Type = "oneshot";
+      };
+      systemd.services.example-2 = {
+        script = "echo example-2";
+        serviceConfig.Type = "oneshot";
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell}
+      set -e
+      grep -q example-1 $1
+      grep -q example-2 $1
+      grep "example" $1 | sort --check --reverse
+    '';
+  };
+
 }

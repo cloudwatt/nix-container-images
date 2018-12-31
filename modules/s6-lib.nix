@@ -93,7 +93,8 @@ in rec {
     execStart ? "",
     chdir ? "",
     user ? "root",
-    execStartPre ? ""
+    execStartPre ? "",
+    ...
   }:
     let
       # If execStartPre is defined we create a bash script

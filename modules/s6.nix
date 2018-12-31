@@ -65,6 +65,7 @@ let
       execStartPre = attrByPath ["serviceConfig" "ExecStartPre"] "" service;
       chdir = attrByPath ["serviceConfig" "WorkingDirectory"] "" service;
       restart = attrByPath ["serviceConfig" "Restart"] "no" service;
+      after = attrByPath ["after"] [] service;
     };
 
   # TODO: print a warning on unsupported services
@@ -86,6 +87,12 @@ let
   longRuns =  s6ServicesPartitions.wrong;
   oneshots = s6ServicesPartitions.right; 
 
+  # Sort oneshot services based on their dependencies.
+  # FIXME: abort on cycles by checking .cycle attribute
+  oneshotsSorted = let
+    t = toposort (a: b: elem (a.name + ".service") b.after ) oneshots;
+  in t.result;
+
  in
 
 {
@@ -99,7 +106,7 @@ let
 
   # The s6 image entry point is only set if some services are defined
   config = mkIf ((oneshots != []) || (longRuns != [])) {
-    s6.init = s6Init oneshots longRuns;
-    image.entryPoint = [ "${s6InitWithStateDir oneshots longRuns}" ];
+    s6.init = s6Init oneshotsSorted longRuns;
+    image.entryPoint = [ "${s6InitWithStateDir oneshotsSorted longRuns}" ];
   };
 }
