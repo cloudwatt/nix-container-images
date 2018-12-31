@@ -70,13 +70,14 @@ in rec {
 
   genS6ScanDir = services: pkgs.runCommand "s6-scandir" {} (''
     mkdir -p $out/.s6-svscan
-    echo '#!${pkgs.s6PortableUtils}/bin/s6-true' > $out/.s6-svscan/finish
+    echo '#!${pkgs.s6PortableUtils}/bin/s6-echo [init finish]' > $out/.s6-svscan/finish
     chmod a+x $out/.s6-svscan/finish
   '' + (concatMapStringsSep "\n" (genS6ServiceDir) services));
 
   genS6ServiceDir = service: ''
     mkdir $out/${service.name}
     ln -s ${genS6Run service} $out/${service.name}/run
+    ln -s ${genS6Finish service} $out/${service.name}/finish
   '';
 
   genS6Run = {
@@ -116,4 +117,22 @@ in rec {
           ${start}
         '';
       };
+
+  genS6Finish = { name, restart, ... }: pkgs.writeTextFile {
+    name = "${name}-finish";
+    executable = true;
+    text = ''
+      #!${pkgs.execline}/bin/execlineb -S0
+    '' + optionalString (restart == "no") ''
+
+      ${pkgs.execline}/bin/export PATH ${path}
+
+      ${pkgs.execline}/bin/if {
+        if { s6-test $\{1} -ne 0 }
+        if { s6-test $\{1} -ne 256 }
+        s6-svscanctl -t ../
+      }
+    '';
+  };
+
 }
