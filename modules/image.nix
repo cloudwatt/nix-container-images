@@ -39,6 +39,13 @@ with lib;
           Entry point command list
         '';
       };
+      from = mkOption {
+        type = types.nullOr types.package;
+        default = null;
+        description = ''
+          The parent image
+        '';
+      };
     };
   };
 

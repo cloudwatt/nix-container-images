@@ -77,6 +77,7 @@ let
 in containerBuilder {
   name = eval.config.image.name;
   tag = eval.config.image.tag;
+  fromImage = eval.config.image.from;
   contents = [
     activationScriptUsers
     eval.config.system.path
