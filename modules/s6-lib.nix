@@ -11,12 +11,12 @@ let
 
 in rec {
 
-  s6InitWithStateDir = oneshotsPre: oneshotsPost: pkgs.writeTextFile {
+  s6InitWithStateDir = oneshotsPre: oneshotsPost: longRuns: pkgs.writeTextFile {
     name = "init";
     executable = true;
     text = ''
       #!${pkgs.execline}/bin/execlineb -S0
-      ${s6Init oneshots longRuns} "/run/s6"
+      ${s6Init oneshotsPre oneshotsPost longRuns} "/run/s6"
     '';
   };
 
