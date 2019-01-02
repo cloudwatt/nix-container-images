@@ -145,4 +145,20 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     '';
   };
 
+  path = {
+    config = {
+      image.name = "path";
+
+      systemd.services.path = {
+        script = "hello";
+        path = [ pkgs.hello ];
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q 'Hello, world!' $1
+    '';
+  };
+
+
 }
