@@ -13,6 +13,7 @@ let
       echo "Running ${makeInit test.config}"...
       ${makeInit test.config} s6-state > s6-log &
       S6PID=$!
+      tail -f s6-log &
 
       for i in `seq 1 10`;
       do
