@@ -10,6 +10,9 @@ let
   # test script can use this file to do some tests
   runS6Test = test: let
     run = pkgs.runCommand "runS6-${test.config.image.name}" { } ''
+      # This is to check the environment variable propagation
+      export IN_S6_INIT_TEST=1
+
       echo "Running ${makeInit test.config}"...
       ${makeInit test.config} s6-state > s6-log &
       S6PID=$!
@@ -157,6 +160,18 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     testScript = ''
       #!${pkgs.stdenv.shell} -e
       grep -q 'Hello, world!' $1
+    '';
+  };
+
+  # Environment variables are propagated to the init script
+  propagatedEnv = {
+    config = {
+      image.name = "propagatedEnv";
+      systemd.services.exemple.script = "echo $IN_S6_INIT_TEST";
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q '^1$' $1
     '';
   };
 
