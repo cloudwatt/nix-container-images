@@ -4,11 +4,12 @@
 
 let
   makeInit = c: (lib.makeImage c).init;
+  makeConfig = c: (lib.makeImage c).config;
 
   # Run init script in background adn redirect its stdout to a file. A
   # test script can use this file to do some tests
-  runS6Test = test:
-    pkgs.runCommand "runS6-${test.config.image.name}" { } ''
+  runS6Test = test: let
+    run = pkgs.runCommand "runS6-${test.config.image.name}" { } ''
       echo "Running ${makeInit test.config}"...
       ${makeInit test.config} s6-state > s6-log &
       S6PID=$!
@@ -36,7 +37,10 @@ let
       # If the timeout is reached, the test fails
       echo "Test timeout."
       exit 1
-  '';
+    '';
+  in
+    # We add the config attribute for debugging
+    run // { config = makeConfig (test.config); };
 
 in
 pkgs.lib.mapAttrs (n: v: runS6Test v) {
