@@ -28,7 +28,7 @@ in rec {
 
       ${pkgs.execline}/bin/export PATH ${path}
 
-      ${pkgs.execline}/bin/if { 
+      ${pkgs.execline}/bin/if {
 
       ifelse { s6-test $# -ne 1 }
       { if { s6-echo "Usage: $0 STATE-DIR" } exit 1 }
@@ -53,7 +53,7 @@ in rec {
         if { cp -r ${genS6ScanDir longRuns}/. $1 }
         # To be able to delete the state dir
         if { chmod -R 0755 $1 }
-        
+
         if { s6-svscanctl -a $1 }
 
         ${genOneshots oneshotsPost}
@@ -69,8 +69,19 @@ in rec {
     '';
   };
 
+  # If a oneshost service fails, the s6-svscan process (which could be
+  # the pid 1) if stopped.
   genOneshots = concatMapStringsSep "\n  " (s: ''
-    ifelse -X -n { ${genS6Run s} } { s6-svscanctl -t $1 }
+    ifelse -X -n
+        { foreground
+            { s6-echo [init stage 2] Start oneshot service "${s.name}" }
+            ${genS6Run s}
+        }
+        # If the oneshot service fails, s6-svscan is stopped
+        { foreground
+            { s6-echo [init stage 2] Oneshot service '${s.name}' failed }
+            s6-svscanctl -t $1
+        }
   '');
 
   genFinish = pkgs.writeScript "s6-finish" ''

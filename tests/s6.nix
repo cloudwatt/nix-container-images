@@ -98,21 +98,21 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     config = {
       image.name = "dependentOneshot";
       systemd.services.example-1 = {
-        script = "echo example-1";
+        script = "echo example-1: MUSTNOTEXISTELSEWHERE_1";
         after = [ "example-2.service" ];
         serviceConfig.Type = "oneshot";
       };
       systemd.services.example-2 = {
-        script = "echo example-2";
+        script = "echo example-2: MUSTNOTEXISTELSEWHERE_2";
         serviceConfig.Type = "oneshot";
       };
     };
     testScript = ''
       #!${pkgs.stdenv.shell}
       set -e
-      grep -q example-1 $1
-      grep -q example-2 $1
-      grep "example" $1 | sort --check --reverse
+      grep -q MUSTNOTEXISTELSEWHERE_1 $1
+      grep -q MUSTNOTEXISTELSEWHERE_2 $1
+      grep MUSTNOTEXISTELSEWHERE $1 | sort --check --reverse
     '';
   };
 
@@ -123,20 +123,20 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
       image.name = "oneshotPost";
 
       systemd.services.example-1 = {
-        script = "sleep 2; echo example-1";
+        script = "sleep 2; echo example-1: MUSTNOTEXISTELSEWHERE_1";
         after = [ "example-2.service" ];
         serviceConfig.Type = "oneshot";
       };
       systemd.services.example-2 = {
-        script = "echo example-2;";
+        script = "echo example-2: MUSTNOTEXISTELSEWHERE_2";
       };
     };
     testScript = ''
       #!${pkgs.stdenv.shell}
       set -e
-      grep -q example-1 $1
-      grep -q example-2 $1
-      grep "example" $1 | head -n2 | sort --check --reverse
+      grep -q MUSTNOTEXISTELSEWHERE_1 $1
+      grep -q MUSTNOTEXISTELSEWHERE_2 $1
+      grep MUSTNOTEXISTELSEWHERE $1 | head -n2 | sort --check --reverse
     '';
   };
 
