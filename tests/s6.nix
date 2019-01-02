@@ -17,7 +17,9 @@ let
       do
         if ${pkgs.writeScript "runS6-testscript" test.testScript} s6-log
         then
-          echo "ok" > $out
+          mkdir $out
+          cp s6-log $out/
+          echo "ok" > $out/result
           exit 0
         fi
 
