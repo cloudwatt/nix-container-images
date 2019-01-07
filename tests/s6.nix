@@ -2,6 +2,8 @@
 
 { pkgs, lib }:
 
+with lib;
+
 let
   makeInit = c: (lib.makeImage c).init;
   makeConfig = c: (lib.makeImage c).config;
@@ -9,9 +11,9 @@ let
   # Run init script in background adn redirect its stdout to a file. A
   # test script can use this file to do some tests
   runS6Test = test: let
+    env = concatStringsSep "\n" (mapAttrsToList (n: v: "export ${n}=${v}") (attrByPath ["env"] {} test));
     run = pkgs.runCommand "runS6-${test.config.image.name}" { } ''
-      # This is to check the environment variable propagation
-      export IN_S6_INIT_TEST=1
+      ${env}
 
       echo "Running ${makeInit test.config}"...
       ${makeInit test.config} s6-state > s6-log &
@@ -173,7 +175,7 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
       #!${pkgs.stdenv.shell} -e
       grep -q '^1$' $1
     '';
+    env = { IN_S6_INIT_TEST = "1"; };
   };
-
 
 }
