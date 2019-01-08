@@ -15,6 +15,8 @@ in
       '';
     };
 
+    environment.systemPackages = [ pkgs.nix ];
+
     nix = {
       enable = true;
       useSandbox = false;

@@ -1,4 +1,4 @@
-{ pkgs, lib, curl }:
+{ pkgs, lib, curl, gnugrep, coreutils }:
 
 with lib;
 
@@ -11,6 +11,7 @@ let
           KEY = "value";
         };
       };
+      environment.systemPackages = [ gnugrep coreutils ];
     };
   };
 

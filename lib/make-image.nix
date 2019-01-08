@@ -14,12 +14,12 @@ let
       # This is to make nix optionnal
       ../modules/nix-daemon.nix
       ../modules/s6.nix
+      ../modules/system-path.nix
     ] ++ (map (m: (pkgs.path + "/nixos/modules/") + m) [
       "/system/etc/etc.nix"
       "/config/users-groups.nix"
       "/misc/assertions.nix"
       "/config/shells-environment.nix"
-      "/config/system-path.nix"
       "/config/system-environment.nix"
       "/programs/environment.nix"
       "/misc/ids.nix"
@@ -31,7 +31,6 @@ let
       "/misc/meta.nix"
       "/misc/version.nix"
       "/services/continuous-integration/hydra/default.nix"
-      "/services/databases/postgresql.nix"
       "/services/databases/postgresql.nix"
       "/services/web-servers/nginx/default.nix"
     ]);
