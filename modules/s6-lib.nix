@@ -80,7 +80,9 @@ in rec {
         # If the oneshot service fails, s6-svscan is stopped
         { foreground
             { s6-echo [init stage 2] Oneshot service '${s.name}' failed }
-            s6-svscanctl -t $1
+            if -n
+              { s6-test -v DEBUG_S6_DONT_KILL_ON_ERROR }
+              s6-svscanctl -t $1
         }
   '');
 
