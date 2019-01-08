@@ -11,6 +11,7 @@ let
 
   tests = {
     s6 = super.callPackage ./tests/s6.nix { };
+    minimalImageSize = super.callPackage ./tests/minimal-image-size.nix { };
     dockerImages = {
       nix = super.callPackage ./tests/nix.nix { };
       from = super.callPackage ./tests/from.nix { };
