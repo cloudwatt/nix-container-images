@@ -1,7 +1,10 @@
-{ config, lib, ...}:
+{ pkgs, config, lib, ...}:
 
 with lib;
 
+let
+  cfg = config;
+in
 {
   options = {
     image = {
@@ -46,6 +49,14 @@ with lib;
           The parent image
         '';
       };
+      interactive = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Add packages for an interactive use of the container
+          (bashInteractive, coreutils)
+        '';
+      };
     };
   };
 
@@ -53,6 +64,7 @@ with lib;
     image.run = ''
       mkdir -m 777 tmp
     '';
+    environment.systemPackages = optionals cfg.image.interactive [ pkgs.bashInteractive pkgs.coreutils ];
   };
 
 }

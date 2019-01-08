@@ -13,6 +13,7 @@ in
         chmod u+w root
         echo 'https://nixos.org/channels/${channel} nixpkgs' > root/.nix-channels
       '';
+      interactive = true;
     };
 
     environment.systemPackages = [ pkgs.nix ];
