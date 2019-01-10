@@ -1,36 +1,111 @@
-# Declarative container images
+# Declarative container images with Nix
 
-Make container images composable thanks to the NixOS modules system!
+This project allows you to
+- make your images composable (thanks to the NixOS modules system)
+- integrate the [s6](https://www.skarnet.org/software/s6/) init system in your images
+- reuse NixOS modules in a container... without having to rely on systemd
+- build a Nix Docker image, built with Nix
+
+
+## Getting started
+
+To build a Docker image named `hello` that runs `hello`.
 
 ```nix
 lib.makeImage (
   { pkgs, ... }: {
-    config = {
-      image.name = "hello";
-
-      environment.systemPackages = [ pkgs.hello ];
-
-      # A small subset of the systemd module is implemented with s6 :/
-      systemd.services.example.script = "/bin/hello";
+    config.image = {
+      name = "hello";
+      entryPoint = [ "${pkgs.hello}/bin/hello" ];
     };
   })
 ```
 
-To use `lib.makeImage` in a project, add `overlay.nix` to your
-[nixpkgs overlay list](https://nixos.org/nixpkgs/manual/#sec-overlays-install).
+- To build an empty image from CLI,
+  ```
+  nix-build -E 'with import ./default.nix{}; lib.makeImage({...}: { config.image.name = "empty"; })'
+  ```
+
+- To use `lib.makeImage` in your project, add `overlay.nix` to your
+  [nixpkgs overlay list](https://nixos.org/nixpkgs/manual/#sec-overlays-install).
+
+See [the image module](modules/image.nix) for currently supported
+options.
 
 
-## Example images
+## Use s6 as init system to run services
+
+The [s6 module](#s6-module) can be used to build an image with an init
+system. The [s6](https://www.skarnet.org/software/s6/) init system is
+used to run defined `s6.services`.
+
+```nix
+lib.makeImage ({ pkgs, ... }: {
+  config = {
+    image.name = "s6";
+    s6.services.nginx = {
+      execStart = ''${pkgs.nginx}/bin/nginx -g "daemon off;"'';
+    };
+  };
+})
+```
+
+Goals of an init system in a container are
+- Proper PID 1 (no zombie processes)
+- Run several services in one container
+- Processes debugging (if the process is killed or died, the container
+  is not necessarily killed)
+- Execute initialization tasks
+
+
+See [s6 module](#s6-module) details.
+
+
+## (Re)Use NixOS modules
+
+Some NixOS modules can be used, such as `users`, `etc`.
+
+```nix
+lib.makeImage ({ pkgs, ... }: {
+  config = {
+    image.name = "nixos";
+    environment.systemPackages = [ pkgs.coreutils ];
+    users.users.alice = {
+      isNormalUser = true;
+    };
+  };
+})
+```
+
+See also [supported NixOS modules](supported-nixos-modules).
+
+
+## Systemd support of NixOS modules :/
+
+It is possible to run some NixOS modules defining systemd services
+thanks to a partial systemd implementation with s6.
+
+Note this implementation is fragile, experimental and partial!
+
+```nix
+lib.makeImage ({ pkgs, ... }: {
+  config = {
+    image.name = "nginx";
+    # Yeah! It is the NixOS module!
+    services.nginx.enable = true;
+  };
+})
+```
+
+
+## Predefined images
 
 - [nix](images/nix.nix): basic single user installation
-- [example](images/example.nix): show some supported NixOS modules
-- [example-systemd](images/example-systemd.nix): supported subset of systemd modules
 
 These images can be built with `nix-build -A dockerImages`.
 
 More configurations and images are also available in the
-[tests directory](./tests), such as in the
-[s6 test](./tests/s6.nix).
+[tests directory](./tests).
 
 
 ## Supported NixOS modules
@@ -41,8 +116,21 @@ More configurations and images are also available in the
 - `systemd`: a small subset of the systemd module is implemented with [s6](https://www.skarnet.org/software/s6/)
 - `nginx`: see its [test](./tests/nginx.nix).
 
-Important: only a subset of NixOS modules is supported. See the
+Important: only a small subset of NixOS modules is supported. See the
 [tests directory](./tests) for supported (and tested) features.
+
+
+## Tests
+
+- [s6](tests/s6.nix): s6 tests executed in the Nix build environment (fast to run but limited)
+- [dockerImages](tests/): tests on Docker images executed in a NixOS VM.
+
+
+## s6 module
+
+TO BE DONE...
+
+See module [options](modules/s6.nix) and [examples](tests/s6.nix).
 
 
 ## Implementation of the NixOS systemd service interface
@@ -52,33 +140,13 @@ implemented with the [s6](https://www.skarnet.org/software/s6/) init
 system.
 
 There are several differences with the NixOS systemd
-implementation. The main one is the service dependency model: there
-are 3 types of services.
+implementation. The main one is the service dependency model:
 
-- `pre-oneshot` services: they are sequentially executed at container startup, before long runs services.
-- Longrun services: all non `oneshot` services!
-- `post-oneshot` services: they are sequentially executed after long
-  runs services have been started. If a `oneshot` service has an after
-  dependency to a long run service, it becomes a post oneshot service.
-
-If a `oneshot` services fails, the container PID 1 is terminated. The
-order of oneshot services depend on the `after` dependencies they are
-defining.
-
-
-## Tests
-
-- [s6](tests/s6.nix): s6 tests executed in the Nix build environment (fast to run but limited)
-- [dockerImages](tests/): tests on Docker images executed in a NixOS VM.
-
-
-## Todos / Limitations
-
-- systemd implementation is fragile
-- Reduce number of files installed by default in images
-- Do not have to patch `nix-daemon.nix`
-- Do not have to patch `update-users-groups.pl`
-- Warnings on non implemented systemd features
+- Services of type `simple` become `long-run` s6 services and dependencies are ignored
+- Services of type `oneshot` become `onehost-pre` s6 services except
+  if they have an `after` dependency to a `simple` service. In this
+  case, they become `oneshot-post`. Dependencies between oneshot
+  services are respected.
 
 
 ## Tips
@@ -91,3 +159,29 @@ defining.
 - To get the image used by a test `nix-build -A tests.dockerImages.nginx.image`
 - The NixOS config of an image `nix-instantiate --eval -A tests.dockerImages.nginx.image.config`
 - The NixOS config of an s6 test `nix-instantiate --eval -A tests.s6.path.config.systemd`
+
+
+## Related projects
+
+- [s6-overlay](https://github.com/just-containers/s6-overlay)
+- [nix-docker-nix](https://github.com/garbas/nix-docker-nix)
+
+
+## Todos / Limitations
+
+- systemd implementation is fragile
+- Do not have to patch `nix-daemon.nix`
+- Do not have to patch `update-users-groups.pl`
+- Warnings on non implemented systemd features
+
+
+## What could be improved in nixpkgs
+
+- The base directory of NixOS activation script should be configurable. It is currently `/`
+- Split service runtime and installation/build time in modules: it's hard to
+  only use the part of a module that generate the configuration file
+  of a service. At evaluation, a lot of modules need to be imported
+  while they are only used by the service runtime part.
+- Explicit dependencies between modules
+
+
