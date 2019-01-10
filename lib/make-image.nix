@@ -14,6 +14,7 @@ let
       # This is to make nix optionnal
       ../modules/nix-daemon.nix
       ../modules/s6.nix
+      ../modules/systemd.nix
       ../modules/system-path.nix
     ] ++ (map (m: (pkgs.path + "/nixos/modules/") + m) [
       "/system/etc/etc.nix"

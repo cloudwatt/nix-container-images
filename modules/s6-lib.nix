@@ -6,7 +6,9 @@
 with pkgs.lib;
 
 let
-  attrToEnv = env: concatStringsSep "\n" (mapAttrsToList (n: v: ''export ${n}="${v}"'') env);
+  envDir = env: pkgs.runCommand "env-dir" {} (''
+    mkdir $out
+  '' + concatStringsSep "\n" (mapAttrsToList (n: v: "echo ${v} > $out/${n}") env));
   path = "${pkgs.execline}/bin:${pkgs.s6PortableUtils}/bin:${pkgs.s6}/bin:${pkgs.coreutils}/bin";
 
 in rec {
@@ -103,48 +105,31 @@ in rec {
   genS6Run = {
     name,
     type,
-    restart,
-    environment ? {},
-    execStart ? "",
-    chdir ? "",
-    user ? "root",
-    execStartPre ? "",
+    environment,
+    execStart,
+    workingDirectory,
+    user,
     ...
   }:
-    let
-      # If execStartPre is defined we create a bash script
-      # to run it before the execStart. This allows to export
-      # env variables in the execStartPre for the execStart.
-      start =
-        if execStartPre != "" || environment != {} then
-          "${pkgs.writeShellScriptBin "start-${name}" ''
-            set -e
-            ${attrToEnv environment}
-            ${execStartPre}
-            exec ${execStart}
-
-          ''}/bin/start-${name}"
-        else
-          execStart;
-    in
-      pkgs.writeTextFile {
-        name = "${name}-run";
-        executable = true;
-        text = ''
-          #!${pkgs.execline}/bin/execlineb -P
-          fdmove -c 2 1
-          ${optionalString (user != "root") "${pkgs.s6}/bin/s6-setuidgid ${user}"}
-          ${optionalString (chdir != "") "cd ${chdir}"}
-          ${start}
+    pkgs.writeTextFile {
+      name = "${name}-run";
+      executable = true;
+      text = ''
+        #!${pkgs.execline}/bin/execlineb -P
+        fdmove -c 2 1
+        ${optionalString (user != "root") "${pkgs.s6}/bin/s6-setuidgid ${user}"}
+        ${optionalString (workingDirectory != null) "cd ${workingDirectory}"}
+        ${optionalString (environment != {}) "${pkgs.s6}/bin/s6-envdir ${envDir environment}"}
+        ${execStart}
         '';
-      };
-
-  genS6Finish = { name, restart, ... }: pkgs.writeTextFile {
+    };
+  
+  genS6Finish = { name, restartOnFailure, ... }: pkgs.writeTextFile {
     name = "${name}-finish";
     executable = true;
     text = ''
       #!${pkgs.execline}/bin/execlineb -S0
-    '' + optionalString (restart == "no") ''
+    '' + optionalString (restartOnFailure == false) ''
 
       ${pkgs.execline}/bin/export PATH ${path}
 

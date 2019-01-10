@@ -178,6 +178,21 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     env = { IN_S6_INIT_TEST = "1"; };
   };
 
+  # Service environment variables are available
+  env = {
+    config = {
+      image.name = "env";
+      s6.services.exemple = {
+        environment = { "TEST_ENV" = "1"; };
+        script = "echo $TEST_ENV";
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q '^1$' $1
+    '';
+  };
+
   # The special environment variable DEBUG_S6_DONT_KILL_ON_ERROR can
   # be used to not kill container when a oneshot fails
   debugS6DontKillOnError = {
@@ -197,6 +212,54 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
       ! grep -q "init finish" $1
     '';
     env = { DEBUG_S6_DONT_KILL_ON_ERROR = "1"; };
+  };
+
+  s6SimpleService = {
+    config = {
+      image.name = "s6SimpleService";
+      s6.services.simple = {
+        execStart = "${pkgs.hello}/bin/hello";
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q Hello $1
+    '';
+  };
+
+  # Prestart is executed before ExecStart
+  preStart = {
+    config = {
+      image.name = "preStart";
+      systemd.services.example = {
+        preStart = "echo MUSTNOTEXISTELSEWHERE_1";
+        script = ''
+          echo MUSTNOTEXISTELSEWHERE_2
+        '';
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q MUSTNOTEXISTELSEWHERE_1 $1
+      grep -q MUSTNOTEXISTELSEWHERE_2 $1
+      grep MUSTNOTEXISTELSEWHERE $1 | sort --check
+    '';
+  };
+
+  workingDirectory = {
+    config = {
+      image.name = "workingDirectory";
+      s6.services.example = {
+        workingDirectory = "/tmp";
+        script = ''
+          echo $PWD
+        '';
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q /tmp $1
+    '';
   };
 
 }
