@@ -13,9 +13,10 @@ let
   in t.result;
 
   toAttrs = mapAttrsToList (name: v: v // { inherit name; });
+  filtered = filterAttrs (n: v: v.enable) cfg.s6.services;
 
   s6ServicesMakeInit = initFn: let
-    services = toAttrs cfg.s6.services;
+    services = toAttrs filtered;
     oneshotPres = filter (v: v.type == "oneshot-pre") services;
     longRuns = filter (v: v.type == "long-run") services;
     oneshotPosts = filter (v: v.type == "oneshot-post") services;
@@ -34,6 +35,11 @@ let
     };
 
   s6ServiceOptions = {
+    enable = mkOption {
+      default = true;
+      type = types.bool;
+      description = "Whether to enable the service";
+    };
     execStart = mkOption {
       type = with types; either str package;
       default = "";
