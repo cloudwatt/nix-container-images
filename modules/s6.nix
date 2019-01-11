@@ -77,7 +77,7 @@ let
     };
     execLogger = mkOption {
       default = null;
-      type = types.nullOr types.str;
+      type = with types; nullOr (either str package);
       description = "Command executed as the service's logger: it gets the stdout of the main process.";
     };
   };
