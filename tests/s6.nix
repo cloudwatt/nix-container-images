@@ -262,4 +262,19 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     '';
   };
 
+  logger = {
+    config = {
+      image.name = "logger";
+      s6.services.logger = {
+        execLogger = ''${pkgs.gnused}/bin/sed -u "s/^/prefix - /"'';
+        script = "echo log line";
+        restartOnFailure = true;
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q "prefix - log line" $1
+    '';
+  };
+
 }

@@ -73,7 +73,12 @@ let
     after = mkOption {
       default = [];
       type = types.listOf types.str;
-      description = "configure ordering dependencies between units.";
+      description = "Configure ordering dependencies between units.";
+    };
+    execLogger = mkOption {
+      default = null;
+      type = types.nullOr types.str;
+      description = "Command executed as the service's logger: it gets the stdout of the main process.";
     };
   };
 

@@ -100,6 +100,11 @@ in rec {
     mkdir $out/${service.name}
     ln -s ${genS6Run service} $out/${service.name}/run
     ln -s ${genS6Finish service} $out/${service.name}/finish
+    ${optionalString (service.execLogger != null) ''
+      mkdir $out/${service.name}/log
+      ln -s ${genS6Log service} $out/${service.name}/log/run
+    ''
+    }
   '';
 
   genS6Run = {
@@ -141,4 +146,13 @@ in rec {
     '';
   };
 
+  genS6Log = { name, execLogger, user, ... }:
+    pkgs.writeTextFile {
+      name = "${name}-log";
+      executable = true;
+      text = ''
+        #!${pkgs.execline}/bin/execlineb -P
+        ${execLogger}
+      '';
+    };
 }
