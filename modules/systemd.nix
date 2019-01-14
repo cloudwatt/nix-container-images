@@ -51,6 +51,7 @@ let
         let l = splitString " " e;
         in if pkgs.lib.hasPrefix "@" (head l)
            then concatStringsSep " " ([
+            "exec"
             "-a"
             (elemAt l 1)
             (pkgs.lib.removePrefix "@" (head l))
