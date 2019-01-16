@@ -166,16 +166,18 @@ in rec {
     executable = true;
     text = ''
       #!${pkgs.execline}/bin/execlineb -S0
-    '' + optionalString (restartOnFailure == false) ''
-
       ${pkgs.execline}/bin/export PATH ${path}
-
-      ${pkgs.execline}/bin/if {
-        if { s6-test $\{1} -ne 0 }
-        if { s6-test $\{1} -ne 256 }
-        s6-svscanctl -t ../
-      }
-    '';
+      ${pkgs.execline}/bin/foreground { s6-echo "[init] Service '${name}' terminates with exit code $1" }
+    '' +
+        (if (restartOnFailure == false)
+        then ''
+          if { s6-test $\{1} -ne 0 }
+          if { s6-test $\{1} -ne 256 }
+          s6-svscanctl -t ../
+        ''
+        else ''
+          foreground { s6-echo "[init] Service '${name}' will be restarted" }
+        '');
   };
 
   genS6Log = { name, execLogger, user, ... }:
