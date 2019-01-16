@@ -15,13 +15,18 @@ let
   toAttrs = mapAttrsToList (name: v: v // { inherit name; });
   filtered = filterAttrs (n: v: v.enable) cfg.s6.services;
 
-  s6ServicesMakeInit = initFn: let
+  s6ServicesMakeInitArgs = let
     services = toAttrs filtered;
     oneshotPres = filter (v: v.type == "oneshot-pre") services;
     longRuns = filter (v: v.type == "long-run") services;
     oneshotPosts = filter (v: v.type == "oneshot-post") services;
-  in
-    initFn (oneshotsSorted oneshotPres) (oneshotsSorted oneshotPosts) longRuns;
+  in {
+    oneshotPres = (oneshotsSorted oneshotPres);
+    oneshotPosts = (oneshotsSorted oneshotPosts);
+    longRuns = longRuns;
+  };
+
+  entryPoint = s6InitWithStateDir (s6ServicesMakeInitArgs // { inPidNamespace = true; });
 
   s6ServiceConfig = { name, config, ...}:
     {
@@ -106,7 +111,7 @@ let
 
   # The s6 image entry point is only set if some services are defined
   config = mkIf (cfg.s6.services != {}) {
-    s6.init = s6ServicesMakeInit s6Init;
-    image.entryPoint = [ "${s6ServicesMakeInit s6InitWithStateDir}" ];
+    s6.init = s6Init s6ServicesMakeInitArgs;
+    image.entryPoint = [ "${entryPoint}" ];
   };
 }

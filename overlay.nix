@@ -19,6 +19,7 @@ let
       nginx = super.callPackage ./tests/nginx.nix { };
       env = super.callPackage ./tests/env.nix { };
       systemd = super.callPackage ./tests/systemd.nix { };
+      s6 = super.callPackage ./tests/s6-image.nix { };
     };
   };
 in

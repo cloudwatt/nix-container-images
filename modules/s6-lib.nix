@@ -13,16 +13,22 @@ let
 
 in rec {
 
-  s6InitWithStateDir = oneshotsPre: oneshotsPost: longRuns: pkgs.writeTextFile {
+  s6InitWithStateDir = args: pkgs.writeTextFile {
     name = "init";
     executable = true;
     text = ''
       #!${pkgs.execline}/bin/execlineb -S0
-      ${s6Init oneshotsPre oneshotsPost longRuns} "/run/s6"
+      ${s6Init args} "/run/s6"
     '';
   };
 
-  s6Init = oneshotsPre: oneshotsPost: longRuns: pkgs.writeTextFile {
+  s6Init = {
+    oneshotPres,
+    oneshotPosts,
+    longRuns,
+    # If true, all processes are killed in s6 finish script!
+    inPidNamespace ? false
+  }: pkgs.writeTextFile {
     name = "init";
     executable = true;
     text = ''
@@ -41,13 +47,13 @@ in rec {
       if { s6-echo [init stage 1] Starting }
 
       if { s6-mkdir -p ''${1}/.s6-svscan }
-      if { s6-ln -s ${genFinish} ''${1}/.s6-svscan/finish }
+      if { s6-ln -s ${genFinish inPidNamespace} ''${1}/.s6-svscan/finish }
 
       # Init stage 2
       background {
         if { s6-echo [init stage 2] Running oneshot services }
 
-        ${genOneshots oneshotsPre}
+        ${genOneshots oneshotPres}
 
         if { s6-echo [init stage 2] Activate longrun services }
 
@@ -58,7 +64,7 @@ in rec {
 
         if { s6-svscanctl -a $1 }
 
-        ${genOneshots oneshotsPost}
+        ${genOneshots oneshotPosts}
       }
 
       ## run the rest of stage 1 with sanitized descriptors
@@ -88,9 +94,35 @@ in rec {
         }
   '');
 
-  genFinish = pkgs.writeScript "s6-finish" ''
-    #!${pkgs.s6PortableUtils}/bin/s6-echo [init finish]
-  '';
+  genFinish = inPidNamespace: if inPidNamespace
+    then pkgs.writeScript "s6-finish" ''
+      #!${pkgs.execline}/bin/execlineb -S0
+      ${pkgs.execline}/bin/export PATH ${path}
+
+      # Sync before TERM'n
+      ${pkgs.execline}/bin/foreground { s6-echo "[init stage 3] syncing disks." }
+      foreground { s6-sync }
+
+      # Kill everything, gently.
+      foreground { s6-echo "[init stage 3] sending all processes the TERM signal." }
+      foreground { s6-nuke -th } # foreground is process 1: it survives
+      foreground { s6-sleep 3 }
+
+      # Last message, then close our pipes and give the logger some time.
+      foreground { s6-echo "[init stage 3] sending all processes the KILL signal and exiting." }
+      fdclose 1 fdclose 2
+      s6-sleep -m 200
+
+      # Kill everything, brutally.
+      foreground { s6-nuke -k } # foreground is process 1: it survives again
+
+      # Reap all the zombies then sync, and we're done.
+      wait { }
+      foreground { s6-sync }
+    ''
+    else pkgs.writeScript "s6-finish" ''
+      #!${pkgs.s6PortableUtils}/bin/s6-echo [init stage 3] Soft finish because not in a pid namespace!
+    '';
 
   genS6ScanDir = services: pkgs.runCommand "s6-scandir" {} (''
     mkdir -p $out

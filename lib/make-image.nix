@@ -96,4 +96,4 @@ in containerBuilder {
 //
 (optionalAttrs
   (eval.config.s6.init != null)
-  { init = eval.config.s6.init; })
+  { inherit (eval.config.s6) init; })

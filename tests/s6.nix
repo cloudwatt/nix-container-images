@@ -62,7 +62,7 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     };
     testScript = ''
       #!${pkgs.stdenv.shell}
-      grep -q "init finish" $1
+      grep -q "init stage 3" $1
     '';
   };
 
@@ -99,7 +99,7 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     };
     testScript = ''
       #!${pkgs.stdenv.shell}
-      grep -q "init finish" $1
+      grep -q "init stage 3" $1
     '';
   };
 
