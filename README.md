@@ -132,6 +132,16 @@ TO BE DONE...
 
 See module [options](modules/s6.nix) and [examples](tests/s6.nix).
 
+### How s6 is terminated
+
+By default, if a s6 service fails, the `s6-svcscan` (PID 1 in a
+container) process is terminated. A `long-run` service can set the
+`restartOnFailure` option to `true` to restart the service when it
+fails.
+
+If the `S6_DONT_TERMINATE_ON_ERROR` environment variable is set,
+`s6-svscan` is not terminated on service failure. This can be used to
+debug interactively a failing service.
 
 ## Implementation of the NixOS systemd service interface
 

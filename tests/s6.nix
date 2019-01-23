@@ -195,23 +195,23 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
 
   # The special environment variable DEBUG_S6_DONT_KILL_ON_ERROR can
   # be used to not kill container when a oneshot fails
-  debugS6DontKillOnError = {
+  s6DontTerminateOnError = {
     config = {
       image.name = "debugS6DontKillOnError";
       systemd.services.fail = {
         script = "exit 1";
         serviceConfig.Type = "oneshot";
       };
-      systemd.services.longRun = {
-        script = "echo debugS6DontKillOnError";
+      s6.services.longRun = {
+        script = "exit 2";
       };
     };
     testScript = ''
       #!${pkgs.stdenv.shell} -e
       sleep 5
-      ! grep -q "init finish" $1
+      ! grep -q "finish" $1
     '';
-    env = { DEBUG_S6_DONT_KILL_ON_ERROR = "1"; };
+    env = { S6_DONT_TERMINATE_ON_ERROR = "1"; };
   };
 
   s6SimpleService = {
