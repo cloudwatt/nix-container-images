@@ -262,6 +262,22 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     '';
   };
 
+  oneshotPre = {
+    config = {
+      image.name = "oneshotPre";
+      s6.services.pre = {
+        type = "oneshot-pre";
+        script = ''
+          echo oneshot-pre
+        '';
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q oneshot-pre $1
+    '';
+  };
+
   logger = {
     config = {
       image.name = "logger";
