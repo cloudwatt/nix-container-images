@@ -14,7 +14,7 @@ let
 in rec {
 
   s6InitWithStateDir = args: pkgs.writeTextFile {
-    name = "init";
+    name = "init-with-state-dir";
     executable = true;
     text = ''
       #!${pkgs.execline}/bin/execlineb -S0
