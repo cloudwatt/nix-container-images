@@ -9,7 +9,20 @@ let
   envDir = env: pkgs.runCommand "env-dir" {} (''
     mkdir $out
   '' + concatStringsSep "\n" (mapAttrsToList (n: v: "echo ${v} > $out/${n}") env));
-  path = "${pkgs.execline}/bin:${pkgs.s6PortableUtils}/bin:${pkgs.s6}/bin:${pkgs.coreutils}/bin";
+
+  # The init script binary environment
+  #
+  # Init script uses absolute path for binaries. This is a little bit
+  # verbose, but it simplifies a lot the PATH environment variable
+  # managment. Since init script itself doesn't rely on the PATH, we
+  # can easily propagate the PATH variable from from the environment
+  # to service scripts.
+  e = let
+    env = pkgs.buildEnv {
+      name = "init-path";
+      paths = with pkgs; [ execline s6PortableUtils s6 coreutils ];
+    };
+  in "${env}/bin";
 
 in rec {
 
@@ -32,98 +45,95 @@ in rec {
     name = "init";
     executable = true;
     text = ''
-      #!${pkgs.execline}/bin/execlineb -S0
+      #!${e}/execlineb -S0
 
-      ${pkgs.execline}/bin/export PATH ${path}
+      ${e}/if {
 
-      ${pkgs.execline}/bin/if {
+      ${e}/ifelse { ${e}/s6-test $# -ne 1 }
+      { ${e}/if { ${e}/s6-echo "Usage: $0 STATE-DIR" } exit 1 }
 
-      ifelse { s6-test $# -ne 1 }
-      { if { s6-echo "Usage: $0 STATE-DIR" } exit 1 }
+      ${e}/ifelse { ${e}/s6-test -e $1 }
+      { ${e}/if { ${e}/s6-echo The state directory $1 must not exist! Exiting. } ${e}/exit 1 }
 
-      ifelse { s6-test -e $1 }
-      { if { s6-echo The state directory $1 must not exist! Exiting. } exit 1 }
+      ${e}/if { ${e}/s6-echo [init stage 1] Starting }
 
-      if { s6-echo [init stage 1] Starting }
-
-      if { s6-mkdir -p ''${1}/.s6-svscan }
-      if { s6-ln -s ${genFinish inPidNamespace} ''${1}/.s6-svscan/finish }
+      ${e}/if { ${e}/s6-mkdir -p ''${1}/.s6-svscan }
+      ${e}/if { ${e}/s6-ln -s ${genFinish inPidNamespace} ''${1}/.s6-svscan/finish }
 
       # Init stage 2
-      background {
-        if { s6-echo [init stage 2] Running oneshot services }
+      ${e}/background {
+        ${e}/if { ${e}/s6-echo [init stage 2] Running oneshot services }
 
         ${genOneshots oneshotPres}
 
-        if { s6-echo [init stage 2] Activate longrun services }
+        ${e}/if { ${e}/s6-echo [init stage 2] Activate longrun services }
 
         # Move the service file to the scan directoy
-        if { cp -r ${genS6ScanDir longRuns}/. $1 }
+        ${e}/if { ${e}/cp -r ${genS6ScanDir longRuns}/. $1 }
         # To be able to delete the state dir
-        if { chmod -R 0755 $1 }
+        ${e}/if { ${e}/chmod -R 0755 $1 }
 
-        if { s6-svscanctl -a $1 }
+        ${e}/if { ${e}/s6-svscanctl -a $1 }
 
         ${genOneshots oneshotPosts}
       }
 
       ## run the rest of stage 1 with sanitized descriptors
-      redirfd -r 0 /dev/null
-      true
+      ${e}/redirfd -r 0 /dev/null
+      ${e}/true
       }
 
       # Run the pid 1
-      s6-svscan -t0 $1
+      ${e}/s6-svscan -t0 $1
     '';
   };
 
   # If a oneshost service fails, the s6-svscan process (which could be
   # the pid 1) if stopped.
   genOneshots = concatMapStringsSep "\n  " (s: ''
-    foreground {
-      if -X -n
-        { foreground
-            { s6-echo [init stage 2] Start oneshot service "${s.name}" }
+    ${e}/foreground {
+      ${e}/if -X -n
+        { ${e}/foreground
+            { ${e}/s6-echo [init stage 2] Start oneshot service "${s.name}" }
             ${genS6Run s}
         }
         # If the oneshot service fails, s6-svscan is stopped
-        foreground
-            { s6-echo [init stage 2] Oneshot service '${s.name}' failed }
-            if -n
-              { s6-test -v S6_DONT_TERMINATE_ON_ERROR }
-              foreground { s6-svscanctl -t $1 }
-              exit 1
+        ${e}/foreground
+            { ${e}/s6-echo [init stage 2] Oneshot service '${s.name}' failed }
+            ${e}/if -n
+              { ${e}/s6-test -v S6_DONT_TERMINATE_ON_ERROR }
+              ${e}/foreground { ${e}/s6-svscanctl -t $1 }
+              ${e}/exit 1
     }
   '');
 
   genFinish = inPidNamespace: if inPidNamespace
     then pkgs.writeScript "s6-finish" ''
-      #!${pkgs.execline}/bin/execlineb -S0
-      ${pkgs.execline}/bin/export PATH ${path}
+      #!${e}/execlineb -S0
 
       # Sync before TERM'n
-      ${pkgs.execline}/bin/foreground { s6-echo "[init stage 3] syncing disks." }
-      foreground { s6-sync }
+      ${e}/foreground { ${e}/s6-echo "[init stage 3] syncing disks." }
+      ${e}/foreground { ${e}/s6-sync }
 
       # Kill everything, gently.
-      foreground { s6-echo "[init stage 3] sending all processes the TERM signal." }
-      foreground { s6-nuke -th } # foreground is process 1: it survives
-      foreground { s6-sleep 3 }
+      ${e}/foreground { ${e}/s6-echo "[init stage 3] sending all processes the TERM signal." }
+      ${e}/foreground { ${e}/s6-nuke -th } # foreground is process 1: it survives
+      ${e}/foreground { ${e}/s6-sleep 3 }
 
       # Last message, then close our pipes and give the logger some time.
-      foreground { s6-echo "[init stage 3] sending all processes the KILL signal and exiting." }
-      fdclose 1 fdclose 2
-      s6-sleep -m 200
+      ${e}/foreground { ${e}/s6-echo "[init stage 3] sending all processes the KILL signal and exiting." }
+      ${e}/fdclose 1 ${e}/fdclose 2
+      ${e}/s6-sleep -m 200
 
       # Kill everything, brutally.
-      foreground { s6-nuke -k } # foreground is process 1: it survives again
+      ${e}/foreground { ${e}/s6-nuke -k } # foreground is process 1: it survives again
 
       # Reap all the zombies then sync, and we're done.
-      wait { }
-      foreground { s6-sync }
+       ${e}/wait { }
+      ${e}/foreground { ${e}/s6-sync }
     ''
     else pkgs.writeScript "s6-finish" ''
-      #!${pkgs.s6PortableUtils}/bin/s6-echo [init stage 3] Soft finish because not in a pid namespace!
+      #!${e}/s6-echo [init stage 3] Soft finish because not in a pid namespace!
     '';
 
   genS6ScanDir = services: pkgs.runCommand "s6-scandir" {} (''
@@ -154,34 +164,33 @@ in rec {
       name = "${name}-run";
       executable = true;
       text = ''
-        #!${pkgs.execline}/bin/execlineb -P
-        fdmove -c 2 1
-        ${optionalString (user != "root") "${pkgs.s6}/bin/s6-setuidgid ${user}"}
-        ${optionalString (workingDirectory != null) "cd ${workingDirectory}"}
-        ${optionalString (environment != {}) "${pkgs.s6}/bin/s6-envdir ${envDir environment}"}
+        #!${e}/execlineb -P
+        ${e}/fdmove -c 2 1
+        ${optionalString (user != "root") "${e}/s6-setuidgid ${user}"}
+        ${optionalString (workingDirectory != null) "${e}/cd ${workingDirectory}"}
+        ${optionalString (environment != {}) "${e}/s6-envdir ${envDir environment}"}
         ${execStart}
-        '';
+      '';
     };
   
   genS6Finish = { name, restartOnFailure, ... }: pkgs.writeTextFile {
     name = "${name}-finish";
     executable = true;
     text = ''
-      #!${pkgs.execline}/bin/execlineb -S0
-      ${pkgs.execline}/bin/export PATH ${path}
-      ${pkgs.execline}/bin/foreground { s6-echo "[init] Service '${name}' terminates with exit code $1" }
+      #!${e}/execlineb -S0
+      ${e}/foreground { ${e}/s6-echo "[init] Service '${name}' terminates with exit code $1" }
     '' +
         (if (restartOnFailure == false)
         then ''
-          if { s6-test $\{1} -ne 0 }
-          if { s6-test $\{1} -ne 256 }
-          foreground { s6-svc -d ./ }
-          if -n
-            { s6-test -v S6_DONT_TERMINATE_ON_ERROR }
-            s6-svscanctl -t ../
+          ${e}/if { ${e}/s6-test $\{1} -ne 0 }
+          ${e}/if { ${e}/s6-test $\{1} -ne 256 }
+          ${e}/foreground { ${e}/s6-svc -d ./ }
+          ${e}/if -n
+            { ${e}/s6-test -v S6_DONT_TERMINATE_ON_ERROR }
+            ${e}/s6-svscanctl -t ../
         ''
         else ''
-          foreground { s6-echo "[init] Service '${name}' will be restarted" }
+          ${e}/foreground { ${e}/s6-echo "[init] Service '${name}' will be restarted" }
         '');
   };
 
@@ -190,7 +199,7 @@ in rec {
       name = "${name}-log";
       executable = true;
       text = ''
-        #!${pkgs.execline}/bin/execlineb -P
+        #!${e}/execlineb -P
         ${execLogger}
       '';
     };

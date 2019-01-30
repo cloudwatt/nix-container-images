@@ -293,4 +293,18 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
     '';
   };
 
+  preservePATH = {
+    config = {
+      image.name = "preservePATH";
+      s6.services.preservePATH = {
+        script = "echo $PATH";
+      };
+    };
+    testScript = ''
+      #!${pkgs.stdenv.shell} -e
+      grep -q SHOULD_PRESERVE_INHERITED_PATH $1
+    '';
+    env = { PATH = "$PATH:SHOULD_PRESERVE_INHERITED_PATH"; };
+  };
+
 }
