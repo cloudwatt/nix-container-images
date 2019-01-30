@@ -57,7 +57,7 @@ let
     };
     type = mkOption {
       default = "long-run";
-      type = types.str;
+      type = types.enum ["long-run" "oneshot-pre" "oneshot-post"];
       description = "Type of the s6 service (oneshot-pre, long-run or oneshot-post).";
     };
     restartOnFailure = mkOption {
