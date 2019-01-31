@@ -113,5 +113,6 @@ let
   config = mkIf (cfg.s6.services != {}) {
     s6.init = s6Init s6ServicesMakeInitArgs;
     image.entryPoint = [ "${entryPoint}" ];
+    environment.systemPackages = [ pkgs.s6 ];
   };
 }
