@@ -34,12 +34,8 @@ let
       type = with types; attrsOf (submodule [ { options = serviceOptions; } serviceConfig ]);
       description = "Definition of systemd service units.";
   };
-  systemd.packages = mkOption {
-      type = "undefined";
-  };
-  systemd.sockets = mkOption {
-      type = "undefined";
-  };
+  systemd.packages = {}; 
+  systemd.sockets = {};
 
   # Generate s6 arguments from systemd service definition
   systemdToS6 = name: service:

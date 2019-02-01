@@ -29,4 +29,6 @@ rec {
       inherit testScript;
     } //
     { inherit image; };
+
+  makeImageDocumentation = pkgs.callPackage ./documentation.nix {};
 }

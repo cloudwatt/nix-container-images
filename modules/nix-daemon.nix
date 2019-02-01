@@ -83,6 +83,7 @@ in
     nix = {
 
       enable = mkOption {
+        description = "Whether enable Nix module.";
         type = types.bool;
         default = false;
       };

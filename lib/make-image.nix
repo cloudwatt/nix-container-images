@@ -41,6 +41,15 @@ let
     };
   };
 
+
+  doc = import (pkgs.path + "../../doc/manual") {
+    inherit pkgs;
+    config = ({...}:{});
+    version = "";
+    revision = "";
+    options = eval.options;
+  };
+
   #  Activation user script is patched because it is creating
   # files in `/` while they have to be created in the build directory.
   activationScriptUsers = let
@@ -92,6 +101,7 @@ in containerBuilder {
 # For debugging purposes
 {
   config = eval.config;
+  options = eval.options;
 }
 //
 (optionalAttrs

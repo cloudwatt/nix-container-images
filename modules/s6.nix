@@ -100,6 +100,7 @@ let
     s6.init = mkOption {
       type = types.nullOr types.package;
       default = null;
+      description = "The generated init script.";
     };
 
     s6.services = mkOption {

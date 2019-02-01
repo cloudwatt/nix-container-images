@@ -4,7 +4,7 @@ This project allows you to
 - make your images composable (thanks to the NixOS modules system)
 - integrate the [s6](https://www.skarnet.org/software/s6/) init system in your images
 - reuse NixOS modules in a container... without having to rely on systemd
-- build a Nix Docker image, built with Nix
+- build with Nix a Docker image containing Nix
 
 
 ## Getting started
@@ -23,20 +23,19 @@ lib.makeImage (
 
 - To build an empty image from CLI,
   ```
-  nix-build -E 'with import ./default.nix{}; lib.makeImage({...}: { config.image.name = "empty"; })'
+  nix-build -E 'with import ./default.nix{}; lib.makeImage{ config.image.name = "empty"; }'
   ```
 
 - To use `lib.makeImage` in your project, add `overlay.nix` to your
   [nixpkgs overlay list](https://nixos.org/nixpkgs/manual/#sec-overlays-install).
 
-See [the image module](modules/image.nix) for currently supported
-options.
+See the [`image`](#module-image) module section for more information.
 
 
 ## Use s6 as init system to run services
 
-The [s6 module](#s6-module) can be used to build an image with an init
-system. The [s6](https://www.skarnet.org/software/s6/) init system is
+The [s6 module](#module-s6) can be used to build an image with an init
+system. The [s6 init system](https://www.skarnet.org/software/s6/) is
 used to run defined `s6.services`.
 
 ```nix
@@ -58,7 +57,7 @@ Goals of an init system in a container are
 - Execute initialization tasks
 
 
-See [s6 module](#s6-module) details.
+See [s6 module](#module-s6) for details.
 
 
 ## (Re)Use NixOS modules
@@ -108,6 +107,44 @@ More configurations and images are also available in the
 [tests directory](./tests).
 
 
+## Module `image`
+
+The `image` module defines common Docker image attributes, such as the
+image name, the environment variables, etc. Please refer to
+[the `image` options documentation](docs/options-well-supported-generated.md#imageentrypoint).
+
+
+## Module `s6`
+
+This module allows you to easily create services, managed by the
+[s6 init system](https://www.skarnet.org/software/s6/). 3 types of
+services can be defined:
+
+- `oneshot-pre` services are exectued sequentially at container start
+  time and must terminates. They can be ordered thanks to the `after`
+  option.
+- `long-run` services are for daemons and are managed by `s6`. There
+  is no dependencies notion on long run services.
+- `oneshot-post` services are executed sequentially once all long run
+  services have been started. They can also be order (`after`
+  option). They are generally used to do provision started services.
+
+Options are described in this
+[generated `s6` options documentation](docs/options-well-supported-generated.md#s6services).
+
+
+### How/when s6 main process is terminated
+
+By default, if a s6 service fails, the `s6-svcscan` (PID 1 in a
+container) process is terminated. A `long-run` service can set the
+`restartOnFailure` option to `true` to restart the service when it
+fails.
+
+If the `S6_DONT_TERMINATE_ON_ERROR` environment variable is set,
+`s6-svscan` is not terminated on service failure. This can be used to
+debug interactively a failing service.
+
+
 ## Supported NixOS modules
 
 - `users`: create users and groups
@@ -126,22 +163,6 @@ Important: only a small subset of NixOS modules is supported. See the
 - [dockerImages](tests/): tests on Docker images executed in a NixOS VM.
 
 
-## s6 module
-
-TO BE DONE...
-
-See module [options](modules/s6.nix) and [examples](tests/s6.nix).
-
-### How s6 is terminated
-
-By default, if a s6 service fails, the `s6-svcscan` (PID 1 in a
-container) process is terminated. A `long-run` service can set the
-`restartOnFailure` option to `true` to restart the service when it
-fails.
-
-If the `S6_DONT_TERMINATE_ON_ERROR` environment variable is set,
-`s6-svscan` is not terminated on service failure. This can be used to
-debug interactively a failing service.
 
 ## Implementation of the NixOS systemd service interface
 
