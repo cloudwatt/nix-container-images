@@ -1,10 +1,10 @@
 # Declarative container images with Nix
 
-This project allows you to
-- make your images composable (thanks to the NixOS modules system)
+With this project you can
+- make your image composable (thanks to the NixOS modules system)
 - integrate the [s6](https://www.skarnet.org/software/s6/) init system in your images
-- reuse NixOS modules in a container... without having to rely on systemd
-- build with Nix a Docker image containing Nix
+- reuse some NixOS modules in a container... without relying on systemd
+- make a Nix a Docker image, built by Nix
 
 
 ## Getting started
@@ -29,7 +29,7 @@ lib.makeImage (
 - To use `lib.makeImage` in your project, add `overlay.nix` to your
   [nixpkgs overlay list](https://nixos.org/nixpkgs/manual/#sec-overlays-install).
 
-See the [`image`](#module-image) module section for more information.
+The [`image`](#module-image) module section for more information.
 
 
 ## Use s6 as init system to run services
@@ -49,7 +49,7 @@ lib.makeImage ({ pkgs, ... }: {
 })
 ```
 
-Goals of an init system in a container are
+Some goals of using an init system in a container are
 - Proper PID 1 (no zombie processes)
 - Run several services in one container
 - Processes debugging (if the process is killed or died, the container
@@ -117,7 +117,7 @@ image name, the environment variables, etc. Please refer to
 ## Module `s6`
 
 This module allows you to easily create services, managed by the
-[s6 init system](https://www.skarnet.org/software/s6/). 3 types of
+[s6 init system](https://www.skarnet.org/software/s6/). Three types of
 services can be defined:
 
 - `oneshot-pre` services are exectued sequentially at container start
@@ -163,7 +163,6 @@ Important: only a small subset of NixOS modules is supported. See the
 - [dockerImages](tests/): tests on Docker images executed in a NixOS VM.
 
 
-
 ## Implementation of the NixOS systemd service interface
 
 A subset of the NixOS systemd services interface is supported and
@@ -196,23 +195,3 @@ implementation. The main one is the service dependency model:
 
 - [s6-overlay](https://github.com/just-containers/s6-overlay)
 - [nix-docker-nix](https://github.com/garbas/nix-docker-nix)
-
-
-## Todos / Limitations
-
-- systemd implementation is fragile
-- Do not have to patch `nix-daemon.nix`
-- Do not have to patch `update-users-groups.pl`
-- Warnings on non implemented systemd features
-
-
-## What could be improved in nixpkgs
-
-- The base directory of NixOS activation script should be configurable. It is currently `/`
-- Split service runtime and installation/build time in modules: it's hard to
-  only use the part of a module that generate the configuration file
-  of a service. At evaluation, a lot of modules need to be imported
-  while they are only used by the service runtime part.
-- Explicit dependencies between modules
-
-
