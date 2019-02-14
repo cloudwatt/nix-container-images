@@ -3,7 +3,12 @@
 with builtins;
 with import (pkgs.path + /nixos/lib/testing.nix) { system = builtins.currentSystem; };
 
+let
+  documentation = pkgs.callPackages ./documentation.nix {};
+in
 rec {
+  inherit (documentation) filterOptions optionsToJson optionsToMarkdown;
+
   # Takes the image derivation and returns the hash
   imageHash = image: head (split "-" (baseNameOf image));
   imageRef = image: "${image.imageName}:${imageHash image}";
@@ -29,6 +34,4 @@ rec {
       inherit testScript;
     } //
     { inherit image; };
-
-  makeImageDocumentation = pkgs.callPackage ./documentation.nix {};
 }
