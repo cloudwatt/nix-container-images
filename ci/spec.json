@@ -1,0 +1,24 @@
+{
+  "enabled": 1,
+  "hidden": false,
+  "description": "nix-container-images",
+  "nixexprinput": "nixexpr",
+  "nixexprpath": "ci/jobsets-declarative.nix",
+  "checkinterval": 60,
+  "schedulingshares": 100,
+  "enableemail": false,
+  "emailoverride": "",
+  "keepnr": 3,
+  "inputs": {
+    "nixexpr": {
+      "value": "https://github.com/cloudwatt/nix-container-images ci keepDotGit",
+      "type": "git",
+      "emailresponsible": false
+    },
+    "nixpkgs": {
+      "value": "https://github.com/NixOS/nixpkgs acd89daabcb47cb882bc72ffc2d01281ed1fecb8",
+      "type": "git",
+      "emailresponsible": false
+    }
+  }
+}

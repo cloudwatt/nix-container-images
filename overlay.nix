@@ -10,7 +10,7 @@ let
   };
 
   tests = {
-    s6 = super.callPackage ./tests/s6.nix { };
+    s6 = super.callPackages ./tests/s6.nix { };
     readme = super.callPackage ./tests/readme.nix { };
     minimalImageSize = super.callPackage ./tests/minimal-image-size.nix { };
     dockerImages = {
