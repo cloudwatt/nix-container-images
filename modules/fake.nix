@@ -75,6 +75,11 @@ with lib;
       default = pkgs.openssh;
     };
 
+    systemd.tmpfiles = mkOption {
+      visible = false;
+      default = {};
+    };
+
     users = {
       users =
         let fakeOptions = {
