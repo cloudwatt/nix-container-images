@@ -11,7 +11,7 @@
   "keepnr": 3,
   "inputs": {
     "nixexpr": {
-      "value": "https://github.com/cloudwatt/nix-container-images ci keepDotGit",
+      "value": "https://github.com/cloudwatt/nix-container-images master keepDotGit",
       "type": "git",
       "emailresponsible": false
     },

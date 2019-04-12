@@ -41,7 +41,7 @@ let
       hidden = false;
       inputs = {
         nixexpr = {
-          value = "https://github.com/cloudwatt/nix-container-images ci";
+          value = "https://github.com/cloudwatt/nix-container-images";
           type = "git";
           emailresponsible = false;
         };
