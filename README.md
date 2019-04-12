@@ -195,3 +195,10 @@ implementation. The main one is the service dependency model:
 
 - [s6-overlay](https://github.com/just-containers/s6-overlay)
 - [nix-docker-nix](https://github.com/garbas/nix-docker-nix)
+
+
+## Contributing
+
+Contributions to nix-container-images through PRs are always
+welcome. All PRs will be automatically tested by the [Hydra CI
+server](https://hydra.nix.corp.cloudwatt.com/project/nix-container-images).
