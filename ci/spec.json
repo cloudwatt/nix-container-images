@@ -19,6 +19,11 @@
       "value": "https://github.com/NixOS/nixpkgs acd89daabcb47cb882bc72ffc2d01281ed1fecb8",
       "type": "git",
       "emailresponsible": false
+    },
+    "pulls": {
+      "type": "githubpulls",
+      "value": "cloudwatt nix-container-images",
+      "emailresponsible": false
     }
   }
 }
