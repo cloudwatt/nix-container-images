@@ -6,4 +6,5 @@ let
 in
 {
   inherit (pkgs) dockerImages;
+  tests.nixContainerImages = pkgs.tests.nixContainerImages;
 }
