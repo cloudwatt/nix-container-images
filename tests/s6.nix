@@ -242,7 +242,7 @@ pkgs.lib.mapAttrs (n: v: runS6Test v) {
       #!${pkgs.stdenv.shell} -e
       grep -q MUSTNOTEXISTELSEWHERE_1 $1
       grep -q MUSTNOTEXISTELSEWHERE_2 $1
-      grep MUSTNOTEXISTELSEWHERE $1 | sort --check
+      grep MUSTNOTEXISTELSEWHERE $1 | head -n2 | sort --check
     '';
   };
 
