@@ -95,6 +95,7 @@ in containerBuilder {
   config = {
     EntryPoint = eval.config.image.entryPoint;
     Env = mapAttrsToList (n: v: "${n}=${v}") eval.config.image.env;
+    ExposedPorts = eval.config.image.exposedPorts;
   };
 }
 //
