@@ -16,6 +16,7 @@ let
     dockerImages = {
       nix = super.callPackage ./tests/nix.nix { };
       from = super.callPackage ./tests/from.nix { };
+      exposedPorts = super.callPackage ./tests/exposed-ports.nix { };
       nginx = super.callPackage ./tests/nginx.nix { };
       env = super.callPackage ./tests/env.nix { };
       systemd = super.callPackage ./tests/systemd.nix { };
