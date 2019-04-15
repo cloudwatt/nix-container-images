@@ -42,6 +42,13 @@ in
           Entry point command list
         '';
       };
+      exposedPorts = mkOption {
+        type = types.attrs;
+        default = {};
+        description = ''
+          Ports exposed by the container
+        '';
+      };
       from = mkOption {
         type = types.nullOr types.package;
         default = null;
