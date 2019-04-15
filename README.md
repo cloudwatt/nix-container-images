@@ -76,7 +76,7 @@ lib.makeImage ({ pkgs, ... }: {
 })
 ```
 
-See also [supported NixOS modules](supported-nixos-modules).
+See also [supported NixOS modules](#supported-nixos-modules).
 
 
 ## Systemd support of NixOS modules :/
