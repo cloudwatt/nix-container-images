@@ -78,12 +78,19 @@ let
        cp -r * $out/
     '';
 
+  # This comes from <nixpkgs/nixos/modules/system/activation/top-level.nix>
+  failedAssertions = map (x: x.message) (filter (x: !x.assertion) eval.config.assertions);
+  showWarnings = res: fold (w: x: builtins.trace "[1;31mwarning: ${w}[0m" x) res eval.config.warnings;
+  withAssertions = f: if failedAssertions != []
+    then throw "\nFailed assertions:\n${concatStringsSep "\n" (map (x: "- ${x}") failedAssertions)}"
+    else showWarnings f;
+
   containerBuilder =
     if eval.config.nix.enable
     then pkgs.dockerTools.buildImageWithNixDb
     else pkgs.dockerTools.buildImage;
 
-in containerBuilder {
+in withAssertions (containerBuilder {
   name = eval.config.image.name;
   tag = eval.config.image.tag;
   fromImage = eval.config.image.from;
@@ -97,7 +104,7 @@ in containerBuilder {
     Env = mapAttrsToList (n: v: "${n}=${v}") eval.config.image.env;
     ExposedPorts = eval.config.image.exposedPorts;
   };
-}
+})
 //
 # For debugging purposes
 {
