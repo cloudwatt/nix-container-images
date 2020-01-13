@@ -79,7 +79,7 @@ lib.makeImage ({ pkgs, ... }: {
 See also [supported NixOS modules](#supported-nixos-modules).
 
 
-## Systemd support of NixOS modules :/
+## Systemd support for NixOS modules :/
 
 It is possible to run some NixOS modules defining systemd services
 thanks to a partial systemd implementation with s6.
@@ -121,13 +121,13 @@ This module allows you to easily create services, managed by the
 services can be defined:
 
 - `oneshot-pre` services are exectued sequentially at container start
-  time and must terminates. They can be ordered thanks to the `after`
+  time and must terminate. They can be ordered thanks to the `after`
   option.
 - `long-run` services are for daemons and are managed by `s6`. There
-  is no dependencies notion on long run services.
-- `oneshot-post` services are executed sequentially once all long run
-  services have been started. They can also be order (`after`
-  option). They are generally used to do provision started services.
+  is no notion of dependency for `long-run` services.
+- `oneshot-post` services are executed sequentially once all `long-run`
+  services have been started. They can also be ordered (`after`
+  option). They are generally used to provision started services.
 
 Options are described in this
 [generated `s6` options documentation](docs/options-well-supported-generated.md#s6services).
@@ -142,7 +142,7 @@ fails.
 
 If the `S6_DONT_TERMINATE_ON_ERROR` environment variable is set,
 `s6-svscan` is not terminated on service failure. This can be used to
-debug interactively a failing service.
+debug a failing service interactively.
 
 
 ## Supported NixOS modules
@@ -151,7 +151,7 @@ debug interactively a failing service.
 - `nix`: configure Nix
 - `environment.etc`: create files in `/etc`
 - `systemd`: a small subset of the systemd module is implemented with [s6](https://www.skarnet.org/software/s6/)
-- `nginx`: see its [test](./tests/nginx.nix).
+- `nginx`: see its [test](./tests/nginx.nix)
 
 Important: only a small subset of NixOS modules is supported. See the
 [tests directory](./tests) for supported (and tested) features.
@@ -172,7 +172,7 @@ system.
 There are several differences with the NixOS systemd
 implementation. The main one is the service dependency model:
 
-- Services of type `simple` become `long-run` s6 services and dependencies are ignored
+- Services of type `simple` become `long-run` s6 services and dependencies are ignored.
 - Services of type `oneshot` become `onehost-pre` s6 services except
   if they have an `after` dependency to a `simple` service. In this
   case, they become `oneshot-post`. Dependencies between oneshot
