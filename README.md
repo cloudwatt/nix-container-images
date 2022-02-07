@@ -1,5 +1,7 @@
 # Declarative container images with Nix
 
+**warning: this project is no longer maintained**
+
 With this project you can
 - make your image composable (thanks to the NixOS modules system)
 - integrate the [s6](https://www.skarnet.org/software/s6/) init system in your images
